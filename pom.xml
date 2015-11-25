@@ -4,6 +4,21 @@
   <artifactId>RESTopoly</artifactId>
   <version>0.0.1-SNAPSHOT</version>
   <name>RESTopoly</name>
+
+  <!-- Setzt die Compilerversion auf 1.8 -->
+  <build>
+    <plugins>
+      <plugin>
+        <artifactId>maven-compiler-plugin</artifactId>
+        <version>3.3</version>
+        <configuration>
+          <source>1.8</source>
+          <target>1.8</target>
+        </configuration>
+      </plugin>
+    </plugins>
+  </build>  
+  
   <description>RESTopoly_Main_Project</description>
   <packaging>pom</packaging>
   <modules>
