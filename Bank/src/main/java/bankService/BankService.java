@@ -25,6 +25,8 @@ public class BankService {
 	public static String MESSAGE_PLAYER_EXIST = "player already got a bank account";
 	public static String MESSAGE_ACCOUNT_NOT_EXIST = "account not exist to this player id";
 	public static String MESSAGE_BANK_NOT_FOUND = "Bank not exist to this game ID";
+	public static String MESSAGE_BODY_IS_EMPTY = "body is empty";
+	public static String MESSAGE_TRANSACTION_FAIL = "transaction failed";
 	
 	/**
 	 * Service starter
@@ -36,9 +38,11 @@ public class BankService {
 		// gson object 
 		Gson gson = new Gson();
 		
-		int sparkPort = spark.Spark.SPARK_DEFAULT_PORT;
+		String protocol = "http://";
+		String ip = InetAddress.getLoopbackAddress().getHostAddress();
+		int jettyPort = spark.Spark.SPARK_DEFAULT_PORT;		
 		
-		String host = "http://" + InetAddress.getLocalHost() + ":" + sparkPort;
+		String host = protocol + ip + ":" + jettyPort;
 		
 		
 //========================================================================
@@ -105,7 +109,7 @@ public class BankService {
 
 			// Check if the bank exist to in param gameID
 			if (bank == null) {
-				res.status(400);
+				res.status(400);	
 				return MESSAGE_BANK_NOT_FOUND;
 			}
 			
@@ -152,6 +156,12 @@ public class BankService {
 			// transaction description
 			String reason = req.body();
 			
+			// precondition
+			if ( reason.isEmpty() ) {
+				res.status(400);
+				return MESSAGE_BODY_IS_EMPTY;
+			}
+			
 			// get bank to game id
 			Bank bank = BankUtil.getBank(gameID);
 
@@ -171,8 +181,15 @@ public class BankService {
 			}
 			
 			// transaction			
-			bank.transferPush(playerID, amount, reason);
+			boolean transferSuccessful = bank.transferPush(playerID, amount, reason);
 			
+			// precondition
+			if ( !transferSuccessful ) {
+				res.status(400);
+				return MESSAGE_TRANSACTION_FAIL;
+			}
+			
+			// get resource
 			String resource = "/banks/" + gameID + "/transfer/to/" + account.getPlayer().getID() + "/" + amount;
 			
 			// create event object
@@ -181,13 +198,12 @@ public class BankService {
 							 	  , reason
 							 	  , host + resource
 							 	  , account.getPlayer());
-						
-			
+										
 			// add event in our bank
 			bank.addEvent(event);
 			
 			res.status(201);		
-			return gson.toJson(new ArrayList<Event>(Arrays.asList(event)));
+			return gson.toJson(new ArrayList<Event>(Arrays.asList(event)));			
 		});
 //========================================================================	
 		
@@ -198,15 +214,66 @@ public class BankService {
 		 * post /banks/{gameid}/transfer/from/{from}/{amount}
 		 */
 		post("/banks/:gameID/transfer/from/:from/:amount", (req, res) -> {
-			
 			// get user input value
 			String gameID = req.params("gameID");
-			String playerID = req.params("from");
-			int amount = Integer.parseInt(req.params("amount")); 
 			
-		
-			// TODO: 
-			return "TODO";
+			// player id 
+			String playerID = req.params("from");
+			
+			// amount to tranfer
+			int amount = Integer.parseInt(req.params("amount"));
+			
+			// transaction description
+			String reason = req.body();
+			
+			// precondition
+			if ( reason.isEmpty() ) {
+				res.status(400);
+				return MESSAGE_BODY_IS_EMPTY;
+			}
+			
+			// get bank to game id
+			Bank bank = BankUtil.getBank(gameID);
+
+			// Check if the bank exist to in param gameID
+			if (bank == null) {
+				res.status(400);
+				return MESSAGE_BANK_NOT_FOUND;
+			}
+			
+			// get player from id
+			Account account = bank.getAccountBy(playerID);
+			
+			// precondtion: account not exist to this player id
+			if ( account == null ) {
+				res.status(400);
+				return MESSAGE_ACCOUNT_NOT_EXIST;
+			}
+			
+			// transaction			
+			boolean transferSuccessful = bank.transferPull(playerID, amount, reason);
+			
+			// precondition
+			if ( !transferSuccessful ) {
+				res.status(400);
+				return MESSAGE_TRANSACTION_FAIL;
+			}
+			
+			// get resource
+			String resource = "/banks/" + gameID + "/transfer/to/" + account.getPlayer().getID() + "/" + amount;
+			
+			// create event object
+			Event event = new Event("TODO: type"
+							 	  , bank.getTransaction().getTo()
+							 	  , reason
+							 	  , host + resource
+							 	  , account.getPlayer());
+										
+			// add event in our bank
+			bank.addEvent(event);
+			
+			res.status(201);		
+			return gson.toJson(new ArrayList<Event>(Arrays.asList(event)));
 		});
 //========================================================================		
 		

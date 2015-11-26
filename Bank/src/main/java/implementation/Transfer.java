@@ -7,30 +7,59 @@ package implementation;
  */
 public class Transfer {
 
+	// properties
 	private String from = "undef";
 	private String to = "undef";
 	private String reason = "undef";
 	
+	// transfer infos
+	private static final String BANK_PULL_MONEY = "bank pull money from a player";
+	private static final String BANK_PUSH_MONEY = "bank push money to a player";
+	
+	/**
+	 * Getter
+	 * @return
+	 */
 	public String getFrom() {
 		return from;
 	}
 
+	/**
+	 * Setter
+	 * @param from
+	 */
 	public void setFrom(String from) {
 		this.from = from;
 	}
 
+	/**
+	 * Getter
+	 * @return
+	 */
 	public String getTo() {
 		return to;
 	}
 
+	/**
+	 * Setter
+	 * @param to
+	 */
 	public void setTo(String to) {
 		this.to = to;
 	}
 
+	/**
+	 * Getter
+	 * @return
+	 */
 	public String getReason() {
 		return reason;
 	}
 
+	/**
+	 * Setter
+	 * @param reason
+	 */
 	public void setReason(String reason) {
 		this.reason = reason;
 	}
@@ -61,12 +90,16 @@ public class Transfer {
 		boolean successSetBankMoney = bank.setBankAmount(bankMoney + amount);
 		
 		// condition
-		if ( !successSetBankMoney ) {
+		if ( !successSetBankMoney ) {			
+			// rollback: get player the amount back
+			while ( !account.setSaldo(playerMoney) ) {
+				// stay here till the rollback was successful
+			}			
 			return false;
 		}
 		
 		// set description
-		setProperties(account.getID(), "bank pull money from a player", reason);
+		setProperties(account.getID(), BANK_PULL_MONEY, reason);
 		return true;
 	}
 
@@ -94,12 +127,16 @@ public class Transfer {
 		boolean successSetPlayerMoney = account.setSaldo(playerMoney + amount);
 
 		// condition
-		if (!successSetPlayerMoney) {
+		if (!successSetPlayerMoney) {			
+			// rollback: give the bank the transfer amount back
+			while ( !bank.setBankAmount(bankMoney) ) {
+				// stay here till the rollback was successful
+			}			
 			return false;
 		}
 
 		// set description
-		setProperties(account.getID(), "bank push money to a player", reason);
+		setProperties(account.getID(), BANK_PUSH_MONEY, reason);
 		return true;
 	}
 	
@@ -129,7 +166,11 @@ public class Transfer {
 		boolean successAdd = accountTo.setSaldo(moneyToPlayer + amount); 
 		
 		// condition
-		if ( !successAdd ) {
+		if ( !successAdd ) {			
+			// rollback give accoumt from his money back
+			while ( !accountFrom.setSaldo(moneyFromPlayer) ) {
+				// stay here till the rollback was successful
+			}			
 			return false;
 		}
 		

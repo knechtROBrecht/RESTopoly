@@ -26,6 +26,7 @@ public class PlayerTest {
 	static final String CREATE_ACCOUNT = "/banks/0/players";
 	static final String CALL_BALANCE = "/banks/0/players/";
 	static final String BANK_TRANSFER_TO = "/banks/0/transfer/to/";
+	static final String BANK_TRANSFER_FROM = "/banks/0/transfer/from/";
 	
 	static final int DEFAULT_ACCOUNT_AMOUNT = 4000;
 	
@@ -58,10 +59,91 @@ public class PlayerTest {
 		assertEquals(amount, DEFAULT_ACCOUNT_AMOUNT);		
 	}
 	
+	/**
+	 * Bank transfer a amount to a player Test
+	 * @throws UnirestException
+	 */
 	@Test
-	public void bankTransferToPlayerTest() {
-		// TODO:
+	public void bankTransferToPlayerTest() throws UnirestException {
+		// player name
+		String player = "robbie";
+		
+		// amount which the bank want tranfer our player
+		int amount = 70;
+		
+		// create new player and maybe a new bank
+		createPlayer(player);
+		
+		// save old amound
+		int oldAmount = getAmount(player);
+		
+		// bank push a amount to our player robbie (posts)
+		bankTransferTo(player, amount);
+		
+		// current / new amount from player robbie
+		int currentAmount = getAmount(player);
+		
+		// test
+		assertEquals(oldAmount + amount, currentAmount);
 	}
+	
+	/**
+	 * This test transfer a amount from a player account to a bank
+	 * @throws UnirestException
+	 */
+	@Test
+	public void bankTransferFromTest() throws UnirestException {
+		// player name
+		String player = "asmael";
+		
+		// amount which the bank want tranfer our player
+		int amount = 70;
+
+		// create new player and maybe a new bank
+		createPlayer(player);
+
+		// save old amound
+		int oldAmount = getAmount(player);
+
+		// bank push a amount to our player robbie (posts)
+		bankTransferFrom(player, amount);
+
+		// current / new amount from player robbie
+		int currentAmount = getAmount(player);
+
+		// test
+		assertEquals(oldAmount - amount, currentAmount);			
+	}
+	
+	/**
+	 * TODO: IN WORK
+	 * In this test transfer a player a amount to a other play 
+	 * @throws UnirestException
+	 */
+	@Test
+	public void playerTransferToPlayerTest() throws UnirestException {
+		// player names
+		String playerFrom = "arlong";
+		String playerTo = "luffy";
+		
+		// define amount 
+		int amount = 170;		
+					
+		// create to players
+		createPlayer(playerFrom);
+		createPlayer(playerTo);
+		
+		// get current account amount
+		int playerFromOldAmount = getAmount(playerFrom);
+		int playerToOldAmount = getAmount(playerTo);
+		
+		
+		
+	}
+	
+//========================================================================
+// 							HELPER METHOD'S	
+//========================================================================	
 	
 	/**
 	 * Method create a account for a player 
@@ -95,8 +177,36 @@ public class PlayerTest {
 		return Integer.parseInt(serverResponse);		
 	}
 	
-	private String bankTransferTo(Bank bank, String playerName) {
-		return "TODO";
+	/**
+	 * Method transfer a amount from a bank to a player
+	 * @param playerName - 
+	 * @param amount - 
+	 * @return String
+	 * @throws UnirestException 
+	 */
+	private String bankTransferTo(String playerName, int amount) throws UnirestException {
+		// request with post and result type is string
+		HttpResponse request = Unirest.post(URL + BANK_TRANSFER_TO + playerName + "/" + amount).body("bank tranfer to player").asString();
+
+		// server response
+		String serverResponse = request.getBody().toString();
+		return serverResponse;
+	}
+	
+	
+	/**
+	 * Method transfer a amount from a player to a bank
+	 * @param playerName
+	 * @return
+	 * @throws UnirestException 
+	 */
+	private String bankTransferFrom(String playerName, int amount) throws UnirestException {
+		// request with post and result type is string
+		HttpResponse request = Unirest.post(URL + BANK_TRANSFER_FROM + playerName + "/" + amount).body("Bank transfer from player").asString();
+
+		// server response
+		String serverResponse = request.getBody().toString();
+		return serverResponse;
 	}
 
 }
