@@ -31,17 +31,13 @@ public class Player {
 	/**
 	 * Indicates if the player object is ready for playing
 	 */
-	private Boolean ready;
+	private Boolean ready = false;
+
 	
-	/**
-	 * Public constructor
-	 * Assigns a unique identifier for a object
-	 * Initializes the attributes
-	 * @param Unique identifier for a object
-	 */
-	public Player(String playerID) {
+	public Player(String playerID, String name, String uri) {
 		this.playerID = playerID;
-		this.ready = false;
+		this.name = name;
+		this.uri = uri;
 	}
 	
 	public String getID() {
@@ -74,6 +70,10 @@ public class Player {
 
 	public Boolean getReady() {
 		return ready;
+	}
+	
+	public boolean readyUp() {
+		return this.ready = true;
 	}
 
 	public void setReady(Boolean ready) {

@@ -25,38 +25,46 @@ public class GamesService {
 
 	public static void main(String[] args) {
 		Gson gson = new Gson();
+		
+		before(("/games/:gameid/*"), (req, res) -> {
+			String gameID = req.params(":gameid");
+			
+			if (null == findGame(gameID))
+				halt(404, "Spiel existiert nicht!");
+		});
+		
+		before(("/games/:gameid/players/:playerid/*"), (req, res) -> {
+			Game game = findGame(req.params(":gameid"));			
+
+			if (null == game.getPlayerByID(req.params(":playerid")))
+				halt(404, "Player existiert nicht!");
+		});
+
 
 		// Starts a new Game
 		post("/games", (req, res) -> {
-
-			res.type("application/json");
-			res.status(201);
-
+			String gameID = req.params(":gameid");
+			
 			Game newGame = new Game();
 			gameList.add(newGame);
 
+			res.status(201);
+			res.type("application/json");			
 			return gson.toJson(newGame);
 		});
 
 		// Adds a new player to a existing game
 		put("/games/:gameid/players/:playerid", (req, res) -> {
-			String gameID = req.params(":gameid");
-			String playerID = req.params(":playerid");
-			req.queryParams("name");
-
-			Game game = findGame(gameID);
-
-			if (null == game) {
-				res.status(404);
-				return "Spiel existiert nicht!";
-			}
+			Game game = findGame(req.params(":gameid"));
+			
+			String playerID = req.params(":playerid");		
 
 			if (game.getPlayerByID(playerID) != null) {
 				res.status(500);
 				return "Player existiert bereits";
 			}
 
-			Player player = new Player(playerID);
+			Player player = new Player(playerID, req.queryParams("name"), req.queryParams("uri"));
 			game.addPlayer(player);
 
 			res.status(200);
@@ -64,25 +72,11 @@ public class GamesService {
 		});
 
 		get("/games/:gameid/players/:playerid/ready", (req, res) -> {
-			String gameID = req.params(":gameid");
-			String playerID = req.params(":playerid");
-
-			Game game = findGame(gameID);
+			Game game = findGame(req.params(":gameid"));	
+			Player player = game.getPlayerByID(req.params(":playerid"));
 			
-			// check if game exist
-			if (null == game) {
-				res.status(404);
-				return "Spiel existiert nicht!";
-			}
-		
-			Player player = game.getPlayerByID(playerID);
-			if(null == player)
-				res.status(404);
-				return "Spieler existiert nicht!";
-			}
-
 			res.status(200);
-			return player.getReady();	
+			return player.readyUp();	
 		});
 
 	// // Changes the readystate of a player

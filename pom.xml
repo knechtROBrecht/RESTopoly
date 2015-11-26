@@ -26,5 +26,8 @@
   	<module>Games</module>
   	<module>Boards</module>
   	<module>Bank</module>
+  	
+  	<module>Events</module>
+  	<module>Player</module>
   </modules>
 </project>
