@@ -16,7 +16,7 @@ import implementation.Player;
  * Precondtiion, start our BankService
  * @throws UnirestException
  */
-public class PlayerTest {
+public class BankServiceTest {
 
 	Gson gson = new Gson();
 		
