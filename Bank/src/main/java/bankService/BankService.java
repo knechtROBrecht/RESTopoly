@@ -193,11 +193,7 @@ public class BankService {
 			String resource = "/banks/" + gameID + "/transfer/to/" + account.getPlayer().getID() + "/" + amount;
 			
 			// create event object
-			Event event = new Event("TODO: type"
-							 	  , bank.getTransaction().getTo()
-							 	  , reason
-							 	  , host + resource
-							 	  , account.getPlayer());
+			Event event = new Event("TODO: type", bank.getTransaction().getTo(), reason, host + resource, account.getPlayer());
 										
 			// add event in our bank
 			bank.addEvent(event);
@@ -263,11 +259,7 @@ public class BankService {
 			String resource = "/banks/" + gameID + "/transfer/to/" + account.getPlayer().getID() + "/" + amount;
 			
 			// create event object
-			Event event = new Event("TODO: type"
-							 	  , bank.getTransaction().getTo()
-							 	  , reason
-							 	  , host + resource
-							 	  , account.getPlayer());
+			Event event = new Event("TODO: type", bank.getTransaction().getTo(), reason, host + resource, account.getPlayer());
 										
 			// add event in our bank
 			bank.addEvent(event);
@@ -282,17 +274,67 @@ public class BankService {
 	 * Geld von einem zu anderen Konto übertragen werden kann mit
 	 * post /banks/{gameid}/transfer/from/{from}/to/{to}/{amount}	
 	 */
-		post("/banks/:gameid/transfer/from/:from/to/:to/:amount", (req, res) -> {
-			
+		post("/banks/:gameID/transfer/from/:from/to/:to/:amount", (req, res) -> {
 			// get user input value
 			String gameID = req.params("gameID");
-			String playerIDTo = req.params("to");
-			String playerIDFrom = req.params("from");
-			int amount = Integer.parseInt(req.params("amount")); 
 			
+			// player id's
+			String playerIDFrom = req.params("from");
+			String playerIDTo = req.params("to");			
+			
+			// amount to tranfer
+			int amount = Integer.parseInt(req.params("amount"));
+			
+			// transaction description
+			String reason = req.body();
+			
+			// precondition
+			if ( reason.isEmpty() ) {
+				res.status(400);
+				return MESSAGE_BODY_IS_EMPTY;
+			}
+			
+			// get bank to game id
+			Bank bank = BankUtil.getBank(gameID);
 
-			// TODO: 
-			return "TODO";
+			// Check if the bank exist to in param gameID
+			if (bank == null) {
+				res.status(400);
+				return MESSAGE_BANK_NOT_FOUND;
+			}
+			
+			// get players from id
+			Account accountFrom = bank.getAccountBy(playerIDFrom);
+			Account accountTo = bank.getAccountBy(playerIDTo);
+			
+			// precondtion: account not exist to this player id
+			if ( accountFrom == null || accountTo == null ) {
+				res.status(400);
+				return MESSAGE_ACCOUNT_NOT_EXIST;
+			}
+			
+			// transaction			
+			boolean transferSuccessful = bank.transfer(playerIDFrom, playerIDTo, amount, reason);
+			
+			// precondition
+			if ( !transferSuccessful ) {
+				res.status(400);
+				return MESSAGE_TRANSACTION_FAIL;
+			}
+			
+			// get resource
+			String resource = "/banks/" + gameID + "/transfer/from/" + accountFrom.getPlayer().getID() + "/to" + accountTo.getPlayer().getID() + "/" + amount;
+			
+			// create event object
+			Event event = new Event("TODO: type", bank.getTransaction().getFrom(), reason, host + resource, accountFrom.getPlayer());										
+			Event event_2 = new Event("TODO: type", bank.getTransaction().getTo(), reason, host + resource, accountTo.getPlayer());			
+			
+			// add event in our bank
+			bank.addEvent(event);
+			bank.addEvent(event_2);
+			
+			res.status(201);		
+			return gson.toJson(new ArrayList<Event>(Arrays.asList(event, event_2)));
 		});
 //========================================================================
 		

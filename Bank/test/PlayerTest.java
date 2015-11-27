@@ -23,10 +23,10 @@ public class PlayerTest {
 	static final String URL = "http://localhost:4567";
 	
 	// services
-	static final String CREATE_ACCOUNT = "/banks/0/players";
-	static final String CALL_BALANCE = "/banks/0/players/";
-	static final String BANK_TRANSFER_TO = "/banks/0/transfer/to/";
-	static final String BANK_TRANSFER_FROM = "/banks/0/transfer/from/";
+	private static final String CREATE_ACCOUNT = "/banks/0/players";
+	private static final String CALL_BALANCE = "/banks/0/players/";
+	private static final String BANK_TRANSFER_TO = "/banks/0/transfer/to/";
+	private static final String BANK_TRANSFER_FROM = "/banks/0/transfer/from/";
 	
 	static final int DEFAULT_ACCOUNT_AMOUNT = 4000;
 	
@@ -137,8 +137,16 @@ public class PlayerTest {
 		int playerFromOldAmount = getAmount(playerFrom);
 		int playerToOldAmount = getAmount(playerTo);
 		
+		// start transfer from player, to player
+		transferFromTo(playerFrom, playerTo, amount);
 		
+		// get current amounts from players
+		int playerFromCurrentAmount = getAmount(playerFrom);
+		int playerToCurrentAmount = getAmount(playerTo);
 		
+		// start assertion
+		assertEquals(playerFromCurrentAmount, (playerFromOldAmount - amount));
+		assertEquals(playerToCurrentAmount, (playerToOldAmount + amount));
 	}
 	
 //========================================================================
@@ -155,7 +163,7 @@ public class PlayerTest {
 		String player = "{'id':" + playerName + ",'position':0,'ready':false}";
 
 		// request with post and result type is string
-		HttpResponse request = Unirest.post(URL + CREATE_ACCOUNT).body(player).asString();
+		HttpResponse<String> request = Unirest.post(URL + CREATE_ACCOUNT).body(player).asString();
 
 		// server response
 		String serverResponse = request.getBody().toString();
@@ -172,7 +180,7 @@ public class PlayerTest {
 	 */
 	private int getAmount(String playerName) throws UnirestException {		
 		// call player amount
-		HttpResponse request = Unirest.get(URL + CALL_BALANCE + playerName).asString();
+		HttpResponse<String> request = Unirest.get(URL + CALL_BALANCE + playerName).asString();
 		String serverResponse = request.getBody().toString();
 		return Integer.parseInt(serverResponse);		
 	}
@@ -186,7 +194,7 @@ public class PlayerTest {
 	 */
 	private String bankTransferTo(String playerName, int amount) throws UnirestException {
 		// request with post and result type is string
-		HttpResponse request = Unirest.post(URL + BANK_TRANSFER_TO + playerName + "/" + amount).body("bank tranfer to player").asString();
+		HttpResponse<String> request = Unirest.post(URL + BANK_TRANSFER_TO + playerName + "/" + amount).body("bank tranfer to player").asString();
 
 		// server response
 		String serverResponse = request.getBody().toString();
@@ -197,16 +205,47 @@ public class PlayerTest {
 	/**
 	 * Method transfer a amount from a player to a bank
 	 * @param playerName
-	 * @return
+	 * @return String
 	 * @throws UnirestException 
 	 */
 	private String bankTransferFrom(String playerName, int amount) throws UnirestException {
 		// request with post and result type is string
-		HttpResponse request = Unirest.post(URL + BANK_TRANSFER_FROM + playerName + "/" + amount).body("Bank transfer from player").asString();
+		HttpResponse<String> request = Unirest.post(URL + BANK_TRANSFER_FROM + playerName + "/" + amount).body("Bank transfer from player").asString();
 
 		// server response
 		String serverResponse = request.getBody().toString();
 		return serverResponse;
+	}
+	
+	/**
+	 * Method does a transfer from a player, to other player
+	 * @param playerFrom
+	 * @param playerTo
+	 * @return String
+	 * @throws UnirestException 
+	 */
+	private String transferFromTo(String playerFrom, String playerTo, int amount) throws UnirestException {		
+		// get the full resource -> /banks/:gameid/transfer/from/:from/to/:to/:amount
+		String getResource = getTransferFromToResource(playerFrom, playerTo, amount);
+		
+		// request with post and result type is string
+		HttpResponse<String> request = Unirest.post(URL + getResource).body("Rent for Badstrasse").asString();
+		
+		// server response
+		String serverResponse = request.getBody().toString();		
+		return serverResponse;
+	}
+	
+	/**
+	 * Method return the full resource for transaction from player, to player
+	 * @param playerFrom
+	 * @param playerTo
+	 * @param amount
+	 * @return String
+	 */
+	private String getTransferFromToResource(String playerFrom, String playerTo, int amount) {		
+		String resource = BANK_TRANSFER_FROM + playerFrom + "/to/" + playerTo + "/" + amount;
+		return resource;
 	}
 
 }
