@@ -20,7 +20,8 @@ public class BankServiceTest {
 
 	Gson gson = new Gson();
 		
-	static final String URL = "http://localhost:4567";
+	//static final String URL = "http://localhost:4567";
+	static final String URL = "http://192.168.99.100:4567";
 	
 	// services
 	private static final String CREATE_ACCOUNT = "/banks/0/players";
