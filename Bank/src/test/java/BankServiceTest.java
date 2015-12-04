@@ -117,7 +117,6 @@ public class BankServiceTest {
 	}
 	
 	/**
-	 * TODO: IN WORK
 	 * In this test transfer a player a amount to a other play 
 	 * @throws UnirestException
 	 */

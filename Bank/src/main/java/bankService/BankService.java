@@ -6,11 +6,12 @@ import java.net.InetAddress;
 import java.net.UnknownHostException;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.List;
+
 import com.google.gson.Gson;
 
 import implementation.Account;
 import implementation.Bank;
-import implementation.BankUtil;
 import implementation.Event;
 import implementation.Player;
 /**
@@ -18,6 +19,9 @@ import implementation.Player;
  * @author foxhound
  */
 public class BankService {
+	
+	// list with all banks in this bank service
+	private List<Bank> bankList = new ArrayList<Bank>();
 	
 	/*
 	 * Info-Messages
@@ -38,6 +42,7 @@ public class BankService {
 	private String resourceTransfer = "/transfer";
 	private String resourceTo = "/to";
 	private String resourceFrom = "/from";
+	private String resourceCoordinator = "/coordinator";
 	
 	private String resourceParamGameID = "/:gameID";
 	private String resourceParamTo = "/:to";
@@ -78,27 +83,45 @@ public class BankService {
 	}
 	
 	/**
+	 * TODO: IN WORK
+	 */
+	public void commitProtocolService() {
+		
+		// get the resource to this service
+		String currentResource = getCommitProtocolResourceService();
+
+		// bind our service to our resource
+		post(currentResource, (req, res) -> {
+			
+			String incommingData = req.body();
+			
+			return "";
+		});
+		
+	}	
+
+	/**
 	 * Service create a account
 	 * ein Konto erstellt werden kann mit
 	 * post /banks/{gameid}/players
 	 */
 	public void startCreatePlayerService() {		
 		// get the resource to this service
-		String createPlayerResource= getCreatePlayerResourceService();
+		String currentResource= getCreatePlayerResourceService();
 		
 		// bind our service to our resource
-		post(createPlayerResource, (req, res) -> {
+		post(currentResource, (req, res) -> {
 			
 			// get gameID from client input
 			String gameID = req.params(paramGameID);
 			
 			// get bank to game id
-			Bank bank = BankUtil.getBank(gameID);
+			Bank bank = getBank(gameID);
 			
 			// add new bank, if the bank not exist under client gameID
 			if ( bank == null ) {
 				bank = new Bank(gameID);
-				BankUtil.add(bank);
+				add(bank);
 			}
 			
 			// a player from client
@@ -144,7 +167,7 @@ public class BankService {
 			String gameID = req.params(paramGameID);
 			
 			// get bank to game id
-			Bank bank = BankUtil.getBank(gameID);
+			Bank bank = getBank(gameID);
 
 			// Check if the bank exist to in param gameID
 			if (bank == null) {
@@ -206,7 +229,7 @@ public class BankService {
 			}
 			
 			// get bank to game id
-			Bank bank = BankUtil.getBank(gameID);
+			Bank bank = getBank(gameID);
 
 			// Check if the bank exist to in param gameID
 			if (bank == null) {
@@ -276,7 +299,7 @@ public class BankService {
 			}
 			
 			// get bank to game id
-			Bank bank = BankUtil.getBank(gameID);
+			Bank bank = getBank(gameID);
 
 			// Check if the bank exist to in param gameID
 			if (bank == null) {
@@ -347,7 +370,7 @@ public class BankService {
 			}
 			
 			// get bank to game id
-			Bank bank = BankUtil.getBank(gameID);
+			Bank bank = getBank(gameID);
 
 			// Check if the bank exist to in param gameID
 			if (bank == null) {
@@ -442,7 +465,6 @@ public class BankService {
 	 * @return String
 	 */
 	private String getBankTransferFromPlayerResourceService() {
-		// post /banks/{gameid}/transfer/from/{from}/{amount}
 		return resourceMain + resourceParamGameID + resourceTransfer + resourceFrom + resourceParamFrom + resourceParamAmount;
 	}
 	
@@ -453,6 +475,37 @@ public class BankService {
 	private String getPlayerTransferToPlayerResourceService() {
 		return resourceMain + resourceParamGameID + resourceTransfer + resourceFrom + resourceParamFrom + 
 				resourceTo + resourceParamTo + resourceParamAmount;
+	}
+	
+	/**
+	 * Method get the commit protocol service url, without http://ip:port
+	 * @return String
+	 */
+	private String getCommitProtocolResourceService() {
+		return resourceMain + resourceCoordinator;
+	}
+	
+	/**
+	 * Method add a bank in our bankList
+	 * @param bank - 
+	 * @return boolean
+	 */
+	private boolean add(Bank bank) {
+		return bankList.add(bank);
+	}
+	
+	/**
+	 * Method get a bank by gameID or null if the bank not exist
+	 * @param gameID - a game ID
+	 * @return Bank v null
+	 */
+	private Bank getBank(String gameID) {		
+		for (Bank bank : bankList) {
+			if ( bank.getID().compareTo(gameID) == 0) {
+				return bank;
+			}
+		}
+		return null;
 	}
 	
 	/**
