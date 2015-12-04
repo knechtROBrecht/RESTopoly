@@ -1,12 +1,11 @@
 package bankService;
 
-import static spark.Spark.post;
+import static spark.Spark.*;
 
 import java.net.InetAddress;
 import java.net.UnknownHostException;
 import java.util.ArrayList;
 import java.util.Arrays;
-import static spark.Spark.get;
 import com.google.gson.Gson;
 
 import implementation.Account;
@@ -20,33 +19,78 @@ import implementation.Player;
  */
 public class BankService {
 	
+	/*
+	 * Info-Messages
+	 */
 	public static String MESSAGE_PLAYER_IS_EMPTY = "Player in body is empty";
 	public static String MESSAGE_CREATE_ACCOUNT = "bank account has been created";
 	public static String MESSAGE_PLAYER_EXIST = "player already got a bank account";
 	public static String MESSAGE_ACCOUNT_NOT_EXIST = "account not exist to this player id";
 	public static String MESSAGE_BANK_NOT_FOUND = "Bank not exist to this game ID";
 	public static String MESSAGE_BODY_IS_EMPTY = "body is empty";
-	public static String MESSAGE_TRANSACTION_FAIL = "transaction failed";
+	public static String MESSAGE_TRANSACTION_FAIL = "transaction failed"; 
 	
-	// gson object 
+	/*
+	 * Resources
+	 */
+	private String resourceMain = "/banks";
+	private String resourcePlayer = "/players";
+	private String resourceTransfer = "/transfer";
+	private String resourceTo = "/to";
+	private String resourceFrom = "/from";
+	
+	private String resourceParamGameID = "/:gameID";
+	private String resourceParamTo = "/:to";
+	private String resourceParamFrom = "/:from";
+	private String resourceParamAmount = "/:amount";
+	private String resourceParamPlayer = "/:playerID";
+	
+	/*
+	 * Param to resources
+	 */
+	private String paramGameID = resourceParamGameID.replace("/:", "");
+	private String paramPlayerID = resourceParamPlayer.replace("/:", "");
+	private String paramAmount = resourceParamAmount.replace("/:", "");
+	private String paramTo = resourceParamTo.replace("/:", "");
+	private String paramFrom = resourceParamFrom.replace("/:", "");
+	
+	/*
+	 * Global-Variabls
+	 */ 
 	Gson gson = new Gson();
+	String host = "";
+		
+	/**
+	 * Default Constructor
+	 * Saved current host ip
+	 */
+	public BankService() {		
+		this.host = getHost();
+	}
 	
-	// current address from our service
-	String protocol = "http://";
-	String ip = InetAddress.getLoopbackAddress().getHostAddress();
-	int jettyPort = spark.Spark.SPARK_DEFAULT_PORT;		
-	String host = protocol + ip + ":" + jettyPort;
+	/**
+	 * Constructor
+	 * @param port - port from our service
+	 */
+	public BankService(int port) {
+		port(port);
+		this.host = getHost(port);
+	}
 	
 	/**
 	 * Service create a account
 	 * ein Konto erstellt werden kann mit
 	 * post /banks/{gameid}/players
 	 */
-	public void startCreatePlayerService() {
-		post("/banks/:gameID/players", (req, res) -> {
+	public void startCreatePlayerService() {		
+		// get the resource to this service
+		String createPlayerResource= getCreatePlayerResourceService();
+		
+		// bind our service to our resource
+		post(createPlayerResource, (req, res) -> {
 			
 			// get gameID from client input
-			String gameID = req.params("gameID");
+			String gameID = req.params(paramGameID);
 			
 			// get bank to game id
 			Bank bank = BankUtil.getBank(gameID);
@@ -65,8 +109,6 @@ public class BankService {
 				res.status(400);
 				return MESSAGE_PLAYER_IS_EMPTY;
 			}
-			
-			System.out.println(playerAsGson);
 			
 			// parse gson from body to our player object
 			Player player = gson.fromJson(playerAsGson, Player.class);									
@@ -90,11 +132,16 @@ public class BankService {
 	 * der Kontostand abgefragt werden kann mit
 	 * get /banks/{gameid}/players/{playerid}
 	 */
-	public void startCallAcountBalanceService() {		
-		get("/banks/:gameID/players/:playerID", (req, res) -> {
+	public void startCallAcountBalanceService() {
+		
+		// get current service resource
+		String currentServiceResource = getCallAcountBalanceResourceService();
+		
+		// bind current service resource
+		get(currentServiceResource, (req, res) -> {
 			
 			// get game id from client input
-			String gameID = req.params("gameID");
+			String gameID = req.params(paramGameID);
 			
 			// get bank to game id
 			Bank bank = BankUtil.getBank(gameID);
@@ -106,7 +153,7 @@ public class BankService {
 			}
 			
 			// get player id from client input
-			String playerID = req.params("playerID");
+			String playerID = req.params(paramPlayerID);
 						
 			// get account object from a player id
 			Account account = bank.getAccountBy(playerID);
@@ -133,17 +180,21 @@ public class BankService {
 	 * Geld von der Bank überwiesen werden kann mit post
 	 * /banks/{gameid}/transfer/to/{to}/{amount}
 	 */
-	public void startBankTransferToPlayerService() {		
-		post("/banks/:gameID/transfer/to/:to/:amount", (req, res) -> {
+	public void startBankTransferToPlayerService() {
+		
+		// get current service resource
+		String currentServiceResource = getBankTransferToPlayerResourceService();
+		
+		post(currentServiceResource, (req, res) -> {
 			
 			// get user input value
-			String gameID = req.params("gameID");
+			String gameID = req.params(paramGameID);
 			
 			// player id 
-			String playerID = req.params("to");
+			String playerID = req.params(paramTo);
 			
 			// amount to tranfer
-			int amount = Integer.parseInt(req.params("amount"));
+			int amount = Integer.parseInt(req.params(paramAmount));
 			
 			// transaction description
 			String reason = req.body();
@@ -200,15 +251,20 @@ public class BankService {
 	 * post /banks/{gameid}/transfer/from/{from}/{amount}
 	 */
 	public void startBankTransferFromPlayerService() {
-		post("/banks/:gameID/transfer/from/:from/:amount", (req, res) -> {
+		
+		// get current service resource
+		String currentServiceResource = getBankTransferFromPlayerResourceService();
+				
+		// bind current service resource
+		post(currentServiceResource, (req, res) -> {
 			// get user input value
-			String gameID = req.params("gameID");
+			String gameID = req.params(paramGameID);
 			
 			// player id 
-			String playerID = req.params("from");
+			String playerID = req.params(paramFrom);
 			
 			// amount to tranfer
-			int amount = Integer.parseInt(req.params("amount"));
+			int amount = Integer.parseInt(req.params(paramAmount));
 			
 			// transaction description
 			String reason = req.body();
@@ -259,22 +315,27 @@ public class BankService {
 			return gson.toJson(new ArrayList<Event>(Arrays.asList(event)));
 		});
 	}
-	
+
 	/**
 	 * Geld von einem zu anderen Konto übertragen werden kann mit
 	 * post /banks/{gameid}/transfer/from/{from}/to/{to}/{amount}	
 	 */
 	public void startPlayerTransferToPlayerService() {
-		post("/banks/:gameID/transfer/from/:from/to/:to/:amount", (req, res) -> {
+		
+		// get current service resource
+		String currentServiceResource = getPlayerTransferToPlayerResourceService();
+
+		// bind current service resource		
+		post(currentServiceResource, (req, res) -> {
 			// get user input value
-			String gameID = req.params("gameID");
+			String gameID = req.params(paramGameID);
 			
 			// player id's
-			String playerIDFrom = req.params("from");
-			String playerIDTo = req.params("to");			
+			String playerIDFrom = req.params(paramFrom);
+			String playerIDTo = req.params(paramTo);			
 			
 			// amount to tranfer
-			int amount = Integer.parseInt(req.params("amount"));
+			int amount = Integer.parseInt(req.params(paramAmount));
 			
 			// transaction description
 			String reason = req.body();
@@ -326,7 +387,72 @@ public class BankService {
 			
 			res.status(201);		
 			return gson.toJson(new ArrayList<Event>(Arrays.asList(event, event_2)));
-		});
+		});		
+	}
+
+//================================================================================================
+// 									PRIVATE HELPER METHOD'S		
+//================================================================================================
+	/**
+	 * Method get the url from our service
+	 * @return String
+	 */
+	private String getHost() {		
+		return getHost(spark.Spark.SPARK_DEFAULT_PORT);
+	}		
+	
+	/**
+	 * Method get the url from our service
+	 * @param port - port from our service
+	 * @return String
+	 */
+	private String getHost(int port) {
+		String protocol = "http://";
+		String ip = InetAddress.getLoopbackAddress().getHostAddress();		
+		String result = protocol + ip + ":" + port;
+		return result;
+	}
+	
+	/**
+	 * Method get the playerResource service url, without http://ip:port
+	 * @return String
+	 */
+	private String getCreatePlayerResourceService() {		
+		return resourceMain + resourceParamGameID + resourcePlayer;
+	}
+	
+	/**
+	 * Method get the call account balance service url, without http://ip:port
+	 * @return String
+	 */
+	private String getCallAcountBalanceResourceService() {
+		return resourceMain + resourceParamGameID + resourcePlayer + resourceParamPlayer;
+	}
+
+	/**
+	 * Method get the bank transfer to player service url, without http://ip:port
+	 * @return String
+	 */
+	private String getBankTransferToPlayerResourceService() {
+		return resourceMain + resourceParamGameID + resourceTransfer + resourceTo + resourceParamTo + resourceParamAmount;
+	}
+
+	/**
+	 * Method get the bank transfer from player service url, without http://ip:port
+	 * @return String
+	 */
+	private String getBankTransferFromPlayerResourceService() {
+		// post /banks/{gameid}/transfer/from/{from}/{amount}
+		return resourceMain + resourceParamGameID + resourceTransfer + resourceFrom + resourceParamFrom + resourceParamAmount;
+	}
+	
+	/**
+	 * Method get the player transfer to player service url, without http://ip:port
+	 * @return String
+	 */
+	private String getPlayerTransferToPlayerResourceService() {
+		return resourceMain + resourceParamGameID + resourceTransfer + resourceFrom + resourceParamFrom + 
+				resourceTo + resourceParamTo + resourceParamAmount;
 	}
 	
 	/**
@@ -336,6 +462,7 @@ public class BankService {
 	 */
 	public static void main(String[] args) throws UnknownHostException {
 		
+		// create a bank service object
 		BankService bankService = new BankService();
 
 		/**
@@ -363,11 +490,12 @@ public class BankService {
 		 * post /banks/{gameid}/transfer/from/{from}/{amount}
 		 */
 		bankService.startBankTransferFromPlayerService();
-		
-	/**
-	 * Geld von einem zu anderen Konto übertragen werden kann mit
-	 * post /banks/{gameid}/transfer/from/{from}/to/{to}/{amount}	
-	 */		bankService.startPlayerTransferToPlayerService();
+
+		/**
+		 * Geld von einem zu anderen Konto übertragen werden kann mit post
+		 * /banks/{gameid}/transfer/from/{from}/to/{to}/{amount}
+		 */
+		bankService.startPlayerTransferToPlayerService();
 		
 	}
 }
