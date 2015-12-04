@@ -28,29 +28,21 @@ public class BankService {
 	public static String MESSAGE_BODY_IS_EMPTY = "body is empty";
 	public static String MESSAGE_TRANSACTION_FAIL = "transaction failed";
 	
+	// gson object 
+	Gson gson = new Gson();
+	
+	// current address from our service
+	String protocol = "http://";
+	String ip = InetAddress.getLoopbackAddress().getHostAddress();
+	int jettyPort = spark.Spark.SPARK_DEFAULT_PORT;		
+	String host = protocol + ip + ":" + jettyPort;
+	
 	/**
-	 * Service starter
-	 * @param args
-	 * @throws UnknownHostException 
+	 * Service create a account
+	 * ein Konto erstellt werden kann mit
+	 * post /banks/{gameid}/players
 	 */
-	public static void main(String[] args) throws UnknownHostException {
-		
-		// gson object 
-		Gson gson = new Gson();
-		
-		String protocol = "http://";
-		String ip = InetAddress.getLoopbackAddress().getHostAddress();
-		int jettyPort = spark.Spark.SPARK_DEFAULT_PORT;		
-		
-		String host = protocol + ip + ":" + jettyPort;
-		
-		
-//========================================================================
-		/**
-		 * Service create a account
-		 * ein Konto erstellt werden kann mit
-		 * post /banks/{gameid}/players
-		 */
+	public void startCreatePlayerService() {
 		post("/banks/:gameID/players", (req, res) -> {
 			
 			// get gameID from client input
@@ -91,14 +83,14 @@ public class BankService {
 				return MESSAGE_PLAYER_EXIST;
 			}
 		});
-//========================================================================
-		
-//========================================================================		
-		/**
-		 * call account balance / kontostand abfragen
-		 * der Kontostand abgefragt werden kann mit
-		 * get /banks/{gameid}/players/{playerid}
-		 */
+	}
+	
+	/**
+	 * call account balance / kontostand abfragen
+	 * der Kontostand abgefragt werden kann mit
+	 * get /banks/{gameid}/players/{playerid}
+	 */
+	public void startCallAcountBalanceService() {		
 		get("/banks/:gameID/players/:playerID", (req, res) -> {
 			
 			// get game id from client input
@@ -134,14 +126,14 @@ public class BankService {
 				// return result
 				return gson.toJson(playerMount);
 			}									
-		}) ;
-//========================================================================
-		
-//========================================================================
-		/**
-		 * Geld von der Bank überwiesen werden kann mit post
-		 * /banks/{gameid}/transfer/to/{to}/{amount}
-		 */
+		});
+	}
+	
+	/**
+	 * Geld von der Bank überwiesen werden kann mit post
+	 * /banks/{gameid}/transfer/to/{to}/{amount}
+	 */
+	public void startBankTransferToPlayerService() {		
 		post("/banks/:gameID/transfer/to/:to/:amount", (req, res) -> {
 			
 			// get user input value
@@ -201,14 +193,13 @@ public class BankService {
 			res.status(201);		
 			return gson.toJson(new ArrayList<Event>(Arrays.asList(event)));			
 		});
-//========================================================================	
-		
+	}
 	
-//========================================================================
-		/**
-		 * Geld eingezogen werden kann mit
-		 * post /banks/{gameid}/transfer/from/{from}/{amount}
-		 */
+	/**
+	 * Geld eingezogen werden kann mit
+	 * post /banks/{gameid}/transfer/from/{from}/{amount}
+	 */
+	public void startBankTransferFromPlayerService() {
 		post("/banks/:gameID/transfer/from/:from/:amount", (req, res) -> {
 			// get user input value
 			String gameID = req.params("gameID");
@@ -267,13 +258,13 @@ public class BankService {
 			res.status(201);		
 			return gson.toJson(new ArrayList<Event>(Arrays.asList(event)));
 		});
-//========================================================================		
-		
-//========================================================================		
+	}
+	
 	/**
 	 * Geld von einem zu anderen Konto übertragen werden kann mit
 	 * post /banks/{gameid}/transfer/from/{from}/to/{to}/{amount}	
 	 */
+	public void startPlayerTransferToPlayerService() {
 		post("/banks/:gameID/transfer/from/:from/to/:to/:amount", (req, res) -> {
 			// get user input value
 			String gameID = req.params("gameID");
@@ -336,8 +327,47 @@ public class BankService {
 			res.status(201);		
 			return gson.toJson(new ArrayList<Event>(Arrays.asList(event, event_2)));
 		});
-//========================================================================
+	}
+	
+	/**
+	 * Service starter
+	 * @param args
+	 * @throws UnknownHostException 
+	 */
+	public static void main(String[] args) throws UnknownHostException {
 		
+		BankService bankService = new BankService();
+
+		/**
+		 * Service create a account
+		 * ein Konto erstellt werden kann mit
+		 * post /banks/{gameid}/players
+		 */
+		bankService.startCreatePlayerService();
+		
+		/**
+		 * call account balance / kontostand abfragen
+		 * der Kontostand abgefragt werden kann mit
+		 * get /banks/{gameid}/players/{playerid}
+		 */
+		bankService.startCallAcountBalanceService();
+		
+		/**
+		 * Geld von der Bank überwiesen werden kann mit post
+		 * /banks/{gameid}/transfer/to/{to}/{amount}
+		 */
+		bankService.startBankTransferToPlayerService();
+
+		/**
+		 * Geld eingezogen werden kann mit
+		 * post /banks/{gameid}/transfer/from/{from}/{amount}
+		 */
+		bankService.startBankTransferFromPlayerService();
+		
+	/**
+	 * Geld von einem zu anderen Konto übertragen werden kann mit
+	 * post /banks/{gameid}/transfer/from/{from}/to/{to}/{amount}	
+	 */		bankService.startPlayerTransferToPlayerService();
 		
 	}
 }
