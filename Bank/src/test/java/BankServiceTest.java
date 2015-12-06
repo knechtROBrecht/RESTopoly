@@ -8,9 +8,9 @@ import com.mashape.unirest.http.Unirest;
 import com.mashape.unirest.http.exceptions.UnirestException;
 import com.mashape.unirest.request.HttpRequest;
 
-import bankService.BankService;
 import implementation.Bank;
 import implementation.Player;
+import services.BankService;
 
 /**
  * Precondtiion, start our BankService

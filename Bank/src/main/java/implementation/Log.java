@@ -8,21 +8,40 @@ package implementation;
 public class Log {
 
 	private String info = "";
-	private int amountBefore = 0;
-	private int amountAfter = 0;
+	private Bank undoBank = null;
+	private Bank redoBank = null;
 	
 	/**
-	 * Constructor
-	 * @param info - a info
-	 * @param amountBefore - current amount
-	 * @param amountAfter - amount after the transaction
+	 * Default Constructor
 	 */
-	public Log(String info, int amountBefore, int amountAfter) {
+	public Log() {
+
+	}
+	
+	/**
+	 * Method set a info for this object
+	 * @param info
+	 */
+	public void setInfo(String info) {
 		this.info = info;
-		this.amountBefore = amountBefore;
-		this.amountAfter = amountAfter;
 	}
 
+	/**
+	 * Method saved a bank object in a undo variable
+	 * @param bank
+	 */
+	public void setUndo(Bank bank) {
+		this.undoBank = bank;
+	}
+	
+	/**
+	 * Method saved a bank object in a redo variable
+	 * @param bank
+	 */
+	public void setRedo(Bank bank) {
+		this.redoBank = bank;
+	}
+	
 	/**
 	 * Getter
 	 * @return String
@@ -30,22 +49,21 @@ public class Log {
 	public String getInfo() {
 		return info;
 	}
-
+	
 	/**
 	 * Getter
-	 * @return int
+	 * @return Bank
 	 */
-	public int getAmountBefore() {
-		return amountBefore;
-	}
-
-	/**
-	 * Getter
-	 * @return int
-	 */
-	public int getAmountAfter() {
-		return amountAfter;
+	public Bank getUndo() {
+		return undoBank;
 	}
 	
+	/**
+	 * Getter
+	 * @return Bank
+	 */
+	public Bank getRedo() {
+		return redoBank;
+	}
 	
 }
