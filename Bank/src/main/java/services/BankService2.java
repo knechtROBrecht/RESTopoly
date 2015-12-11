@@ -12,7 +12,15 @@ public class BankService2 {
 		 * ein Konto erstellt werden kann mit
 		 * post /banks/{gameid}/players
 		 */
-		bankService.startCreatePlayerService();
+		//bankService.startCreatePlayerAccountService();
+		bankService.twoPhaseCommitProtocol();
+		
+		/**
+		 * call account balance / kontostand abfragen
+		 * der Kontostand abgefragt werden kann mit
+		 * get /banks/{gameid}/players/{playerid}
+		 */
+		//bankService.callAccountBalanceService();
 		
 	}
 }

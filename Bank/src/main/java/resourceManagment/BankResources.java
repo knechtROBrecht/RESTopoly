@@ -36,7 +36,7 @@ public class BankResources {
 	 * Method get the playerResource service url, without http://ip:port
 	 * @return String
 	 */
-	public String getCreatePlayerResourceService() {		
+	public String getCreatePlayerAccountResourceService() {		
 		return resourceMain + resourceParamGameID + resourcePlayer;
 	}
 	

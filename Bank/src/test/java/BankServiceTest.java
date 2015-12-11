@@ -1,5 +1,6 @@
 import static org.junit.Assert.*;
 
+import org.junit.Ignore;
 import org.junit.Test;
 
 import com.google.gson.Gson;
@@ -37,7 +38,7 @@ public class BankServiceTest {
 	 */
 	@Test
 	public void createAccountTest() throws UnirestException {		
-		String serverResponse = createPlayer("Many");		
+		String serverResponse = createPlayer("many");		
 		assertEquals(serverResponse, BankService.MESSAGE_CREATE_ACCOUNT);
 	}
 	
@@ -48,7 +49,7 @@ public class BankServiceTest {
 	@Test 
 	public void getAmountFromPlayer() throws UnirestException {
 		
-		String playerName = "Peter";
+		String playerName = "peter";
 		
 		// create player for this test
 		createPlayer(playerName);
@@ -120,7 +121,7 @@ public class BankServiceTest {
 	 * In this test transfer a player a amount to a other play 
 	 * @throws UnirestException
 	 */
-	@Test
+	@Ignore @Test
 	public void playerTransferToPlayerTest() throws UnirestException {
 		// player names
 		String playerFrom = "arlong";
