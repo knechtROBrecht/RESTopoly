@@ -195,8 +195,44 @@ public class TransactionService {
 			
 			transmitter.setReason(reason);
 			return initiatedTwoPhaseCommitProtocol(transmitter, bankServiceList, res, 201, 400);
+		});		
+	}
+	
+	/**
+	 * Geld von einem zu anderen Konto übertragen werden kann mit
+	 * post /banks/{gameid}/transfer/from/{from}/to/{to}/{amount}	
+	 */
+	synchronized public void startPlayerTransferToPlayerService() {
+
+		// get current service resource
+		String currentServiceResource = resourceManager.getTransactionResources().getPlayerTransferToPlayerResourceService();
+
+		// bind current service resource
+		post(currentServiceResource, (req, res) -> {
+
+			String reason = req.body();
+
+			// precondition
+			if (reason.isEmpty()) {
+				res.status(400);
+				return MESSAGE_BODY_IS_EMPTY;
+			}
+			
+			// initialize the transmitter object for the communication beetwen ts and a bank	
+			Transmitter transmitter = new Transmitter
+					(
+					TwoPhaseCommitProtocol.SERVICE_IDENT_PLAYER_TRANSFER_TO_PLAYER,
+					null,
+					req.params(resourceManager.getBankResources().paramGameID),
+					"playerID",
+					req.params(resourceManager.getBankResources().paramFrom),
+					req.params(resourceManager.getBankResources().paramTo),
+					Integer.parseInt(req.params(resourceManager.getBankResources().paramAmount))
+					);
+			
+			transmitter.setReason(reason);
+			return initiatedTwoPhaseCommitProtocol(transmitter, bankServiceList, res, 201, 400);
 		});
-		
 	}
 //================================================================================================
 //		PRIVATE HELPER METHOD'S		
@@ -324,26 +360,17 @@ public class TransactionService {
 	}
 	
 	public static void main(String[] args) {
-		
+		// create a object from our transaction service TS-Server / TwoPhaseCommitProtocl
 		TransactionService transactionService = new TransactionService();
 		
 		/*
 		 *  here can a bank register by our transaction service
 		 *  starting test service
 		 */						
-		transactionService.startCreatePlayerAccountService();
-		
-		transactionService.startCallAccountBalanceService();
-		
-		transactionService.startBankTransferToPlayerService();
-		
-		transactionService.startBankTransferFromPlayerService();
-		
-		
-		
-		
-		
-		
-		
+		transactionService.startCreatePlayerAccountService();		
+		transactionService.startCallAccountBalanceService();		
+		transactionService.startBankTransferToPlayerService();		
+		transactionService.startBankTransferFromPlayerService();		
+		transactionService.startPlayerTransferToPlayerService();
 	}
 }

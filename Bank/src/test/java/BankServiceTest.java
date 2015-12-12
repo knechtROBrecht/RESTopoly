@@ -121,7 +121,7 @@ public class BankServiceTest {
 	 * In this test transfer a player a amount to a other play 
 	 * @throws UnirestException
 	 */
-	@Ignore @Test
+	@Test
 	public void playerTransferToPlayerTest() throws UnirestException {
 		// player names
 		String playerFrom = "arlong";

@@ -1,6 +1,5 @@
 package services;
 
-import static spark.Spark.get;
 import static spark.Spark.post;
 import static spark.SparkBase.port;
 
@@ -17,12 +16,11 @@ import implementation.Bank;
 import implementation.Event;
 import implementation.IO;
 import implementation.Log;
-import implementation.Player;
 import implementation.Transmitter;
 import implementation.TwoPhaseCommitProtocol;
 import resourceManagment.BankResources;
 import resourceManagment.ResourceManager;
-import spark.Request;
+
 /**
  * Our Bank service
  * @author foxhound
@@ -137,10 +135,13 @@ public class BankService {
 					return resultFromFirstStepOfTwoPhaseCommitProtocol(transmitter);
 				
 
-				// TODO: player transfer money to other player
-				}
-
-				
+				// player transfer money to other player
+				case TwoPhaseCommitProtocol.SERVICE_IDENT_PLAYER_TRANSFER_TO_PLAYER:
+					transmitter = doPlayerTransferToPlayer(transmitter);
+					
+					// send ready or failed back
+					return resultFromFirstStepOfTwoPhaseCommitProtocol(transmitter);
+				}				
 			}
 
 			// commit phase
@@ -158,88 +159,9 @@ public class BankService {
 		});
 		return "unexpected case";		
 	}
-	
-	
-	
-
-	/**
-	 * Geld von einem zu anderen Konto übertragen werden kann mit
-	 * post /banks/{gameid}/transfer/from/{from}/to/{to}/{amount}	
-	 */
-	public void startPlayerTransferToPlayerService() {
-		
-		// get current service resource
-		String currentServiceResource = resourceManager.getBankResources().getPlayerTransferToPlayerResourceService();
-
-		// bind current service resource		
-		post(currentServiceResource, (req, res) -> {
-			// get user input value
-			String gameID = req.params(resourceManager.getBankResources().paramGameID);
-			
-			// player id's
-			String playerIDFrom = req.params(resourceManager.getBankResources().paramFrom);
-			String playerIDTo = req.params(resourceManager.getBankResources().paramTo);			
-			
-			// amount to tranfer
-			int amount = Integer.parseInt(req.params(resourceManager.getBankResources().paramAmount));
-			
-			// transaction description
-			String reason = req.body();
-			
-			// precondition
-			if ( reason.isEmpty() ) {
-				res.status(400);
-				return MESSAGE_BODY_IS_EMPTY;
-			}
-			
-			// get bank to game id
-			Bank bank = getBank(gameID);
-
-			// Check if the bank exist to in param gameID
-			if (bank == null) {
-				res.status(400);
-				return MESSAGE_BANK_NOT_FOUND;
-			}
-			
-			// get players from id
-			Account accountFrom = bank.getAccountBy(playerIDFrom);
-			Account accountTo = bank.getAccountBy(playerIDTo);
-			
-			// precondtion: account not exist to this player id
-			if ( accountFrom == null || accountTo == null ) {
-				res.status(400);
-				return MESSAGE_ACCOUNT_NOT_EXIST;
-			}
-			
-			// transaction			
-			boolean transferSuccessful = bank.transfer(playerIDFrom, playerIDTo, amount, reason);
-			
-			// precondition
-			if ( !transferSuccessful ) {
-				res.status(400);
-				return MESSAGE_TRANSACTION_FAIL;
-			}
-			
-			// get resource
-			String resource = "/banks/" + gameID + "/transfer/from/" + accountFrom.getPlayer().getID() + "/to" + accountTo.getPlayer().getID() + "/" + amount;
-			
-			// create event object
-			Event event = new Event("TODO: type", bank.getTransaction().getFrom(), reason, host + resource, accountFrom.getPlayer());										
-			Event event_2 = new Event("TODO: type", bank.getTransaction().getTo(), reason, host + resource, accountTo.getPlayer());			
-			
-			// add event in our bank
-			bank.addEvent(event);
-			bank.addEvent(event_2);
-			
-			res.status(201);		
-			return gson.toJson(new ArrayList<Event>(Arrays.asList(event, event_2)));
-		});		
-	}
-
 //================================================================================================
 // 									PRIVATE SERVICE METHOD'S		
 //================================================================================================
-	
 	/**
 	 * Service create a account
 	 * ein Konto erstellt werden kann mit
@@ -413,6 +335,12 @@ public class BankService {
 			transmitter.setResultMessage(MESSAGE_ACCOUNT_NOT_EXIST);
 			return transmitter;
 		}
+		
+		// create a new log
+		currentLog = new Log();
+					
+		// save current state
+		currentLog.setUndo(bank);
 
 		// transaction
 		boolean transferSuccessful = bank.transferPull(playerID, amount, reason);
@@ -432,14 +360,90 @@ public class BankService {
 
 		// add event in our bank
 		bank.addEvent(event);
+		
+		// save modify bank in redo 
+		currentLog.setRedo(bank);
 
 		transmitter.setOperationIsSuccessful(true);
 		transmitter.setResultMessage(gson.toJson(new ArrayList<Event>(Arrays.asList(event))));
 		return transmitter;
 	}
 	
+	/**
+	 * Geld von einem zu anderen Konto übertragen werden kann mit
+	 * post /banks/{gameid}/transfer/from/{from}/to/{to}/{amount}	
+	 */
+	private Transmitter doPlayerTransferToPlayer(Transmitter transmitter) {
+			// get user input value
+			String gameID = transmitter.getGameID();
+			
+			// player id's
+			String playerIDFrom = transmitter.getFrom();
+			String playerIDTo = transmitter.getTo();			
+			
+			// amount to tranfer
+			int amount = transmitter.getAmount();
+			
+			// transaction description
+			String reason = transmitter.getReason();
+			
+			// get bank to game id
+			Bank bank = getBank(gameID);
+
+			// Check if the bank exist to in param gameID
+			if (bank == null) {
+				transmitter.setOperationIsSuccessful(false);
+				transmitter.setResultMessage(MESSAGE_BANK_NOT_FOUND);
+				return transmitter;
+			}
+			
+			// create a new log
+			currentLog = new Log();
+						
+			// save current state
+			currentLog.setUndo(bank);
+			
+			// get players from id
+			Account accountFrom = bank.getAccountBy(playerIDFrom);
+			Account accountTo = bank.getAccountBy(playerIDTo);
+			
+			// precondtion: account not exist to this player id
+			if ( accountFrom == null || accountTo == null ) {
+				transmitter.setOperationIsSuccessful(false);
+				transmitter.setResultMessage(MESSAGE_ACCOUNT_NOT_EXIST);				
+				return transmitter;
+			}
+			
+			// transaction			
+			boolean transferSuccessful = bank.transfer(playerIDFrom, playerIDTo, amount, reason);
+			
+			// precondition
+			if ( !transferSuccessful ) {
+				transmitter.setOperationIsSuccessful(false);
+				transmitter.setResultMessage(MESSAGE_TRANSACTION_FAIL);				
+				return transmitter;
+			}
+			
+			// get resource
+			String resource = "/banks/" + gameID + "/transfer/from/" + accountFrom.getPlayer().getID() + "/to/" + accountTo.getPlayer().getID() + "/" + amount;
+			
+			// create event object
+			Event event = new Event("TODO: type", bank.getTransaction().getFrom(), reason, host + resource, accountFrom.getPlayer());										
+			Event event_2 = new Event("TODO: type", bank.getTransaction().getTo(), reason, host + resource, accountTo.getPlayer());			
+			
+			// add event in our bank
+			bank.addEvent(event);
+			bank.addEvent(event_2);
+			
+			// save modify bank in redo 
+			currentLog.setRedo(bank);
+			
+			transmitter.setResultMessage(gson.toJson(new ArrayList<Event>(Arrays.asList(event, event_2))));
+			transmitter.setOperationIsSuccessful(true);
+			return transmitter;
+	}
 //================================================================================================
-//		PRIVATE HELPER METHOD'S		
+//									PRIVATE HELPER METHOD'S		
 //================================================================================================	
 	/**
 	 * Method return the transmitter as json format

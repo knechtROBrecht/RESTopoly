@@ -46,4 +46,10 @@ public class TwoPhaseCommitProtocol {
 	 */
 	public static final String SERVICE_IDENT_BANK_TRANSFER_MONEY_FROM_PLAYER = "bank transfer money from a player";
 	
+	/**
+	 * Geld von einem zu anderen Konto übertragen werden kann mit
+	 * post /banks/{gameid}/transfer/from/{from}/to/{to}/{amount}	
+	 */
+	public static final String SERVICE_IDENT_PLAYER_TRANSFER_TO_PLAYER = "a player transfer a amount to a other player";
+	
 }
