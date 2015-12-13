@@ -18,3 +18,7 @@ hs_err_pid*
 
 # ignore maven target directories
 *target
+*.prefs
+
+# Mac OS X Files
+.DS_Store

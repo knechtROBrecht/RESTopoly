@@ -7,5 +7,9 @@ public class PlayerService {
 		post("/player/turn", (req, res) -> {
 			return "NOT IMPLEMENTED YET";
 		});
+		
+		post("/player/event", (req, res) -> {
+			return "NOT IMPLEMENTED YET";
+		});		
 	}
 }

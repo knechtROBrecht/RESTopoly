@@ -48,9 +48,9 @@ public class Event {
 	}
 	
 	//=======================================================
-	//		sGENERATED GETTER AND SETTER METHODS
+	//		  GENERATED GETTER AND SETTER METHODS
 	//=======================================================
-
+	
 	public String getResource() {
 		return resource;
 	}
