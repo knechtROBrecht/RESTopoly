@@ -234,16 +234,15 @@ public class TransactionService {
 		});
 	}
 //================================================================================================
-//		PRIVATE HELPER METHOD'S		
-//================================================================================================	
-	
+//									PRIVATE HELPER METHOD'S		
+//================================================================================================		
 	/**
 	 * full two phase commit protocol implementation for server/TransactionService site
 	 * @param res - 
 	 * @param body - 
 	 * @return String
 	 */
-	private String initiatedTwoPhaseCommitProtocol(Transmitter transmitter, List<String> bankServiceList, Response res, int statusSuccess, int statusFailed) {
+	synchronized private String initiatedTwoPhaseCommitProtocol(Transmitter transmitter, List<String> bankServiceList, Response res, int statusSuccess, int statusFailed) {
 		
 		// send all banks prepare and wait of his answer
 		transmitter = startCommitRequestPhase(bankServiceList, transmitter);
@@ -285,18 +284,20 @@ public class TransactionService {
 	}
 	
 	/**
-	 * Method initiated the commit-request-phase 1
-	 * if all bank's answered with ready, then return the method true, else false
-	 * @param urlList - url from all bank services
-	 * @return boolean
+	 * This method is the implementation for the ready, commit and about phase
+	 * @param urlList
+	 * @param transmitter
+	 * @param phase
+	 * @return Transmitter
 	 */
-	private Transmitter startCommitRequestPhase(List<String> urlList, Transmitter transmitter) {		
+	private Transmitter phaseImplementation(List<String> urlList, Transmitter transmitter, String phase) {
+		
 		// flag for not failed from a bank service
 		boolean bankServiceNotFailed = true;
 		
 		// send to all bank's prepare 
 		for (String url : urlList) {						
-			transmitter.setTwoPhaseCommitProtocolIdentifier(TwoPhaseCommitProtocol.PREPARE);			
+			transmitter.setTwoPhaseCommitProtocolIdentifier(phase);			
 			String response = io.request(url, gson.toJson(transmitter));
 			
 			// check if a bank was offline
@@ -304,6 +305,7 @@ public class TransactionService {
 				continue;
 			}
 			
+			// convert our response from bank to transmitter object
 			transmitter = gson.fromJson(response, Transmitter.class);
 			
 			// bank send failed
@@ -312,8 +314,19 @@ public class TransactionService {
 			}
 		}
 				
+		// set operation of successful / true
 		transmitter.setOperationIsSuccessful(bankServiceNotFailed);
 		return transmitter;
+	}
+	
+	/**
+	 * Method initiated the commit-request-phase 1
+	 * if all bank's answered with ready, then return the method true, else false
+	 * @param urlList - url from all bank services
+	 * @return boolean
+	 */
+	private Transmitter startCommitRequestPhase(List<String> urlList, Transmitter transmitter) {				
+		return phaseImplementation(urlList, transmitter, TwoPhaseCommitProtocol.PREPARE);
 	}
 	
 	/**
@@ -323,28 +336,7 @@ public class TransactionService {
 	 * @return boolean
 	 */
 	private Transmitter startCommitPhase(List<String> urlList, Transmitter transmitter) {		
-		
-		boolean operationIsSuccessfull = true;
-		
-		for (String url : urlList) {			
-			transmitter.setTwoPhaseCommitProtocolIdentifier(TwoPhaseCommitProtocol.COMMIT);			
-			String response = io.request(url, gson.toJson(transmitter));
-			
-			// check if a bank was offline
-			if (isBankServiceOffline(url, response)) {
-				continue;
-			}
-			
-			// convert response to transmitter object
-			transmitter = gson.fromJson(response, Transmitter.class);
-			
-			// what happend, if once bank go offline -> then we can not transaction 
-			if ( transmitter.getTwoPhaseCommitProtocolIdentifier().compareTo(TwoPhaseCommitProtocol.ACKNOWLEDGMENT) != 0 ) {
-				operationIsSuccessfull = false;
-			}			
-		}
-		transmitter.setOperationIsSuccessful(operationIsSuccessfull);
-		return transmitter;
+		return phaseImplementation(urlList, transmitter, TwoPhaseCommitProtocol.COMMIT);
 	}
 
 	/**
@@ -352,27 +344,8 @@ public class TransactionService {
 	 * @param urlLIst
 	 * @return
 	 */
-	private Transmitter abortPhase(List<String> urlList, Transmitter transmitter) {		
-		// flag for acknowledgment answer from a bank
-		boolean bankAsweredSuccess = true;
-
-		for (String url : urlList) {			
-			transmitter.setTwoPhaseCommitProtocolIdentifier(TwoPhaseCommitProtocol.ABORT);			
-			String response = io.request(url, gson.toJson(transmitter));
-			
-			// check if a bank was offline
-			if (isBankServiceOffline(url, response)) {
-				continue;
-			}
-			
-			transmitter = gson.fromJson(response, Transmitter.class);
-			
-			if ( transmitter.getTwoPhaseCommitProtocolIdentifier().compareTo(TwoPhaseCommitProtocol.ACKNOWLEDGMENT) != 0 ) {
-				bankAsweredSuccess = false;
-			}			
-		}
-		transmitter.setOperationIsSuccessful(bankAsweredSuccess);
-		return transmitter;
+	private Transmitter abortPhase(List<String> urlList, Transmitter transmitter) {
+		return phaseImplementation(urlList, transmitter, TwoPhaseCommitProtocol.ABORT);
 	}
 	
 	/**
