@@ -33,6 +33,7 @@ public class TransactionService {
 	public static String MESSAGE_BANK_NOT_FOUND = "Bank not exist to this game ID";
 	public static String MESSAGE_BODY_IS_EMPTY = "body is empty";
 	public static String MESSAGE_TRANSACTION_FAIL = "transaction failed";
+	private static String MESSAGE_BANK_WAS_OFFLINE = "Request can not be send to this url: ";
 
 	// get the resource manager
 	ResourceManager resourceManager = new ResourceManager();
@@ -98,7 +99,7 @@ public class TransactionService {
 		get(currentServiceResource, (req, res) -> {
 			
 			// balance service
-			loadBalance += 1;
+			loadBalance ++;
 			
 			// initialize the transmitter object for the communication beetwen ts and a bank	
 			Transmitter transmitter = new Transmitter
@@ -161,7 +162,6 @@ public class TransactionService {
 	}
 	
 	/**
-	 * TODO: IN WORK
 	 * Geld eingezogen werden kann mit
 	 * post /banks/{gameid}/transfer/from/{from}/{amount}
 	 */
@@ -299,6 +299,12 @@ public class TransactionService {
 		for (String url : urlList) {						
 			transmitter.setTwoPhaseCommitProtocolIdentifier(TwoPhaseCommitProtocol.PREPARE);			
 			String response = io.request(url, gson.toJson(transmitter));
+			
+			// check if a bank was offline
+			if ( isBankServiceOffline(url, response) ) {
+				continue;
+			}
+			
 			transmitter = gson.fromJson(response, Transmitter.class);
 			
 			// bank send failed
@@ -325,6 +331,11 @@ public class TransactionService {
 			transmitter.setTwoPhaseCommitProtocolIdentifier(TwoPhaseCommitProtocol.COMMIT);			
 			String response = io.request(url, gson.toJson(transmitter));
 			
+			// check if a bank was offline
+			if (isBankServiceOffline(url, response)) {
+				continue;
+			}
+			
 			// convert response to transmitter object
 			transmitter = gson.fromJson(response, Transmitter.class);
 			
@@ -349,6 +360,12 @@ public class TransactionService {
 		for (String url : urlList) {			
 			transmitter.setTwoPhaseCommitProtocolIdentifier(TwoPhaseCommitProtocol.ABORT);			
 			String response = io.request(url, gson.toJson(transmitter));
+			
+			// check if a bank was offline
+			if (isBankServiceOffline(url, response)) {
+				continue;
+			}
+			
 			transmitter = gson.fromJson(response, Transmitter.class);
 			
 			if ( transmitter.getTwoPhaseCommitProtocolIdentifier().compareTo(TwoPhaseCommitProtocol.ACKNOWLEDGMENT) != 0 ) {
@@ -357,6 +374,20 @@ public class TransactionService {
 		}
 		transmitter.setOperationIsSuccessful(bankAsweredSuccess);
 		return transmitter;
+	}
+	
+	/**
+	 * Method checked with help from a response result, if a bank offline
+	 * @param url - 
+	 * @param response - 
+	 * @return boolean
+	 */
+	private boolean isBankServiceOffline(String url, String response) {		
+		String offlineMessage = MESSAGE_BANK_WAS_OFFLINE + url;		
+		if ( offlineMessage.compareTo(response) == 0 ) {
+			return true;
+		}		
+		return false;
 	}
 	
 	public static void main(String[] args) {
