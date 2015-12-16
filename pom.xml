@@ -29,5 +29,6 @@
   	
   	<module>Events</module>
   	<module>Player</module>
+  	<module>Broker</module>
   </modules>
 </project>

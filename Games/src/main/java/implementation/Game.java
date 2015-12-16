@@ -22,6 +22,10 @@ public class Game {
 	private String gameID;
 
 	private List<Player> players;
+	
+	private boolean started = false;
+	
+	private Player mutex = null;
 
 	/**
 	 * Public constructor Assigns a unique identifier for a object Initializes
@@ -68,10 +72,10 @@ public class Game {
 	 *            - player id
 	 * @return Player
 	 */
-	public Player getPlayerByID(String id) {		
+	public Player getPlayerByID(String id) {
 		for (Player player : players)
 			if (id.equals(player.getID()))
-				return player;		
+				return player;
 		return null;
 	}
 
@@ -81,4 +85,28 @@ public class Game {
 	public String getID() {
 		return this.gameID;
 	}
+	
+	public void setReady(){
+		started = true;
+	}
+	
+	public boolean getStatus(){
+		return started;
+	}
+	
+	public Player getMutex() {
+        return mutex;
+    }
+
+    public void releaseMutex() {
+    	mutex = null;
+    }
+
+    public boolean acquireMutex(Player player) {
+        if(mutex == null && player != null) {
+        	mutex = player;
+            return true;
+        }
+        return false;
+    }
 }
