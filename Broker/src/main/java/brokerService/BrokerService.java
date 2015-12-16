@@ -13,6 +13,8 @@ import implementation.Estate;
 public class BrokerService {
 
 	static Map<String, Broker> brokers = new HashMap<>();
+	//Games 0, Boards 1, Dice 2, Bank 3, Events 4, Brokers 5 
+	static String BaseUrl = "https://vs-docker.informatik.haw-hamburg.de/ports/17474/brokers";
 
 	public static void main(String[] args) {
 
@@ -47,15 +49,17 @@ public class BrokerService {
 			if (broker.hasEstate(req.params(":placeid"))){
 				res.status(200);
 				//TODO hier egtl mit der uri antworten
-				return broker.getEstate(req.params(":placeid"));
+				String Response = BaseUrl + "/" + req.params(":gameid") + "/places/" + req.params(":placeid");
+				return Response;
 			}
 			
 			broker.addEstate(req.params(":placeid"), estate);
 			
 			res.status(201);
 			res.type("application/json");
-			//TODO mit der uri antworten
-			return gson.toJson(estate);
+			//TODO mit der uri antworten macht das sinn?
+			String Response = BaseUrl + "/" + req.params(":gameid") + "/places/" + req.params(":placeid");
+			return Response;
 		});
 		
 		put("/brokers/:gameid/places/:placeid/visit/:playerid", (req, res) -> {

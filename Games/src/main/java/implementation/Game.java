@@ -15,13 +15,15 @@ import implementation.GameComponent;
  */
 public class Game {
 
-	GameComponent components;
-
 	private static int gamesCounter = 0;
 
 	private String gameID;
+	
+	private String uri;
 
 	private List<Player> players;
+	
+	GameComponent components;
 	
 	private boolean started = false;
 	
@@ -78,9 +80,9 @@ public class Game {
 				return player;
 		return null;
 	}
-
+	
 	/**
-	 * @^1return Unique identifier for this game
+	 * @ return Unique identifier for this game
 	 */
 	public String getID() {
 		return this.gameID;
@@ -109,4 +111,8 @@ public class Game {
         }
         return false;
     }
+
+	public boolean doesPlayerExists(String playerID) {
+		return getPlayerByID(playerID) != null; 
+	}
 }

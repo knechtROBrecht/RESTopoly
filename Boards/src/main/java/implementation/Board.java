@@ -1,14 +1,16 @@
 package implementation;
 
 import java.util.*;
+import java.util.stream.Collector;
+import java.util.stream.Collectors;
 
 public class Board {
 
 	private String uri;
 	private List<Field> fields = new ArrayList<>();
+	private Map<String, Integer> positions = new HashMap<String, Integer>();
 	private List<Player> players = new ArrayList<>();
-//	private Map<String, Integer> positions = new HashMap<>();
-
+		
 	public Board() {
 		fields.add(new Field(new Place("Los")));
 		fields.add(new Field(new Place("Badstraße")));
@@ -20,7 +22,7 @@ public class Board {
 		fields.add(new Field(new Place("Ereignisfeld")));
 		fields.add(new Field(new Place("Elisenstraße")));
 		fields.add(new Field(new Place("Poststraße")));
-		fields.add(new Field(new Place("Gefängnis / Besucher")));
+		fields.add(new Field(new Place("Gefängnis.Besucher")));
 		fields.add(new Field(new Place("Seestraße")));
 		fields.add(new Field(new Place("Elektrizitätswerk")));
 		fields.add(new Field(new Place("Hafenstraße")));
@@ -71,48 +73,59 @@ public class Board {
 		this.players = players;
 	}
 
-	public void addPlayer(Player player) {
-		players.add(player);
+	public Map<String, Integer> getPositions() {
+		return positions;
 	}
 
-	public boolean removePlayer(String player) {
-		for (int i = 0; i < players.size(); i++) {
-			if (players.get(i).equals(player)) {
-				players.remove(i);
-				return true;
-			}
-		}
-		return false;
+	public void setPositions(Map<String, Integer> positions) {
+		this.positions = positions;
 	}
-
-	public Player getPlayer(String playerid) {
-		Player tmp = null;
-		for (Player player : players) {
-			if (player.getId().equals(playerid)) {
-				tmp = player;
-			}
-		}
-		return tmp;
-	}
-
-//	public Map<String, Integer> getPositions() {
-//		return positions;
-//	}
-//
-//	public void setPositions(Map<String, Integer> positions) {
-//		this.positions = positions;
-//	}
 
 	public void updatePosition(Player player, int newPosition) {
 		int oldPosition = player.getPosition();
 
-		if(!fields.get(oldPosition).removePlayer(player.getId())){
-			//throw exception
+		if (!fields.get(oldPosition).removePlayer(player.getId())) {
+			//TODO throw exception
 		}
 
 		int position = newPosition % fields.size();
+		//TODO wenn über los dann geld
 		player.setPosition(position);
 		fields.get(position).addPlayer(player.getId());
-//		positions.put(player.getId(), position);
+		positions.put(player.getId(), position);
+	}
+
+	public boolean removePlayer(String playerID) {
+		return positions.remove(playerID) != null;
+	}
+
+	public boolean hasPlayer(String playerID) {
+		return positions.containsKey(playerID);
+	}
+
+	public Player getPlayer(String playerID) {
+		for (Player player : players) {
+			if(player.equals(playerID)){
+				return player;
+			}
+		}
+		return null;
+	}
+
+	public void addPlayer(Player player) {		
+		players.add(player);		
+	}
+	
+	public List<Place> getPlaces() {
+		return fields.stream().map(p -> p.getPlace()).collect(Collectors.toList());
+	}
+	
+	public Place getPlace(String placeID) {
+		return fields.stream().filter(f -> f.getPlace().getName() == placeID).findFirst().get().getPlace();
+	}
+
+	public Place updatePlace(Place place) {
+		
+		return null;
 	}
 }

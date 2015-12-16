@@ -7,24 +7,33 @@ import com.mashape.unirest.http.JsonNode;
 import com.mashape.unirest.http.Unirest;
 import com.mashape.unirest.http.exceptions.UnirestException;
 
-import resources.Constants;
+import resources.Config;
 
 public class ServiceApi {
 
-	public static JSONObject newBoard(String gameid) throws UnirestException{
-		 HttpResponse<JsonNode> response = Unirest.put(Constants.gamesUri + "/{gameid}")
+	public static JSONObject newBoard(String gameID) throws UnirestException{
+		 HttpResponse<JsonNode> response = Unirest.put(Config.getBoardURI("/{gameid}"))
 	                .header("accept", "application/json")
-	                .routeParam("gameid", gameid)
+	                .routeParam("gameid", gameID)
 	                .asJson();
 	        return response.getBody().getObject();
 	}
 	
-	public static JSONObject addPlayerToBoard(String gameid, String playerid)throws UnirestException{
-		HttpResponse<JsonNode> response = Unirest.put(Constants.boardUri + "/{gameid}/players/{playerid}")
+	public static JSONObject addPlayerToBoard(String gameID, String playerID)throws UnirestException{
+		HttpResponse<JsonNode> response = Unirest.put(Config.getBoardURI("/{gameid}/players/{playerid}"))
 				.header("accept","application/json")
-				.routeParam("gameid", gameid)
-				.routeParam("playerid",playerid)
+				.routeParam("gameid", gameID)
+				.routeParam("playerid",playerID)
 				.asJson();
 		return response.getBody().getObject();
 	}
+
+	public static JSONObject removePlayerFromBoard(String gameID, String playerID) throws UnirestException {
+		HttpResponse<JsonNode> response = Unirest.delete(Config.getBoardURI("/{gameid}/players/{playerid}"))
+				.header("accept","application/json")
+				.routeParam("gameid", gameID)
+				.routeParam("playerid",playerID)
+				.asJson();
+		return response.getBody().getObject();
+	}	
 }
