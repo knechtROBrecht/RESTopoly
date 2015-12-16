@@ -13,7 +13,6 @@ import implementation.Player;
 import implementation.Transmitter;
 import implementation.TwoPhaseCommitProtocol;
 import resourceManagment.ResourceManager;
-import spark.Request;
 import spark.Response;
 
 /**
@@ -33,6 +32,7 @@ public class TransactionService {
 	public static String MESSAGE_BANK_NOT_FOUND = "Bank not exist to this game ID";
 	public static String MESSAGE_BODY_IS_EMPTY = "body is empty";
 	public static String MESSAGE_TRANSACTION_FAIL = "transaction failed";
+	private static String MESSAGE_BANK_WAS_OFFLINE = "Request can not be send to this url: ";
 
 	// get the resource manager
 	ResourceManager resourceManager = new ResourceManager();
@@ -98,7 +98,7 @@ public class TransactionService {
 		get(currentServiceResource, (req, res) -> {
 			
 			// balance service
-			loadBalance += 1;
+			loadBalance ++;
 			
 			// initialize the transmitter object for the communication beetwen ts and a bank	
 			Transmitter transmitter = new Transmitter
@@ -161,7 +161,6 @@ public class TransactionService {
 	}
 	
 	/**
-	 * TODO: IN WORK
 	 * Geld eingezogen werden kann mit
 	 * post /banks/{gameid}/transfer/from/{from}/{amount}
 	 */
@@ -235,16 +234,15 @@ public class TransactionService {
 		});
 	}
 //================================================================================================
-//		PRIVATE HELPER METHOD'S		
-//================================================================================================	
-	
+//									PRIVATE HELPER METHOD'S		
+//================================================================================================		
 	/**
 	 * full two phase commit protocol implementation for server/TransactionService site
 	 * @param res - 
 	 * @param body - 
 	 * @return String
 	 */
-	private String initiatedTwoPhaseCommitProtocol(Transmitter transmitter, List<String> bankServiceList, Response res, int statusSuccess, int statusFailed) {
+	synchronized private String initiatedTwoPhaseCommitProtocol(Transmitter transmitter, List<String> bankServiceList, Response res, int statusSuccess, int statusFailed) {
 		
 		// send all banks prepare and wait of his answer
 		transmitter = startCommitRequestPhase(bankServiceList, transmitter);
@@ -286,19 +284,28 @@ public class TransactionService {
 	}
 	
 	/**
-	 * Method initiated the commit-request-phase 1
-	 * if all bank's answered with ready, then return the method true, else false
-	 * @param urlList - url from all bank services
-	 * @return boolean
+	 * This method is the implementation for the ready, commit and about phase
+	 * @param urlList
+	 * @param transmitter
+	 * @param phase
+	 * @return Transmitter
 	 */
-	private Transmitter startCommitRequestPhase(List<String> urlList, Transmitter transmitter) {		
+	private Transmitter phaseImplementation(List<String> urlList, Transmitter transmitter, String phase) {
+		
 		// flag for not failed from a bank service
 		boolean bankServiceNotFailed = true;
 		
 		// send to all bank's prepare 
 		for (String url : urlList) {						
-			transmitter.setTwoPhaseCommitProtocolIdentifier(TwoPhaseCommitProtocol.PREPARE);			
+			transmitter.setTwoPhaseCommitProtocolIdentifier(phase);			
 			String response = io.request(url, gson.toJson(transmitter));
+			
+			// check if a bank was offline
+			if ( isBankServiceOffline(url, response) ) {
+				continue;
+			}
+			
+			// convert our response from bank to transmitter object
 			transmitter = gson.fromJson(response, Transmitter.class);
 			
 			// bank send failed
@@ -307,8 +314,19 @@ public class TransactionService {
 			}
 		}
 				
+		// set operation of successful / true
 		transmitter.setOperationIsSuccessful(bankServiceNotFailed);
 		return transmitter;
+	}
+	
+	/**
+	 * Method initiated the commit-request-phase 1
+	 * if all bank's answered with ready, then return the method true, else false
+	 * @param urlList - url from all bank services
+	 * @return boolean
+	 */
+	private Transmitter startCommitRequestPhase(List<String> urlList, Transmitter transmitter) {				
+		return phaseImplementation(urlList, transmitter, TwoPhaseCommitProtocol.PREPARE);
 	}
 	
 	/**
@@ -318,23 +336,7 @@ public class TransactionService {
 	 * @return boolean
 	 */
 	private Transmitter startCommitPhase(List<String> urlList, Transmitter transmitter) {		
-		
-		boolean operationIsSuccessfull = true;
-		
-		for (String url : urlList) {			
-			transmitter.setTwoPhaseCommitProtocolIdentifier(TwoPhaseCommitProtocol.COMMIT);			
-			String response = io.request(url, gson.toJson(transmitter));
-			
-			// convert response to transmitter object
-			transmitter = gson.fromJson(response, Transmitter.class);
-			
-			// what happend, if once bank go offline -> then we can not transaction 
-			if ( transmitter.getTwoPhaseCommitProtocolIdentifier().compareTo(TwoPhaseCommitProtocol.ACKNOWLEDGMENT) != 0 ) {
-				operationIsSuccessfull = false;
-			}			
-		}
-		transmitter.setOperationIsSuccessful(operationIsSuccessfull);
-		return transmitter;
+		return phaseImplementation(urlList, transmitter, TwoPhaseCommitProtocol.COMMIT);
 	}
 
 	/**
@@ -342,21 +344,22 @@ public class TransactionService {
 	 * @param urlLIst
 	 * @return
 	 */
-	private Transmitter abortPhase(List<String> urlList, Transmitter transmitter) {		
-		// flag for acknowledgment answer from a bank
-		boolean bankAsweredSuccess = true;
-
-		for (String url : urlList) {			
-			transmitter.setTwoPhaseCommitProtocolIdentifier(TwoPhaseCommitProtocol.ABORT);			
-			String response = io.request(url, gson.toJson(transmitter));
-			transmitter = gson.fromJson(response, Transmitter.class);
-			
-			if ( transmitter.getTwoPhaseCommitProtocolIdentifier().compareTo(TwoPhaseCommitProtocol.ACKNOWLEDGMENT) != 0 ) {
-				bankAsweredSuccess = false;
-			}			
-		}
-		transmitter.setOperationIsSuccessful(bankAsweredSuccess);
-		return transmitter;
+	private Transmitter abortPhase(List<String> urlList, Transmitter transmitter) {
+		return phaseImplementation(urlList, transmitter, TwoPhaseCommitProtocol.ABORT);
+	}
+	
+	/**
+	 * Method checked with help from a response result, if a bank offline
+	 * @param url - 
+	 * @param response - 
+	 * @return boolean
+	 */
+	private boolean isBankServiceOffline(String url, String response) {		
+		String offlineMessage = MESSAGE_BANK_WAS_OFFLINE + url;		
+		if ( offlineMessage.compareTo(response) == 0 ) {
+			return true;
+		}		
+		return false;
 	}
 	
 	public static void main(String[] args) {
