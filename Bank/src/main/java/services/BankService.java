@@ -140,7 +140,7 @@ public class BankService {
 					transmitter = doPlayerTransferToPlayer(transmitter);
 					
 					// send ready or failed back
-					return resultFromFirstStepOfTwoPhaseCommitProtocol(transmitter);
+					return resultFromFirstStepOfTwoPhaseCommitProtocol(transmitter);	
 				}				
 			}
 

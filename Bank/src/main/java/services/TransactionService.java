@@ -2,12 +2,14 @@ package services;
 
 import static spark.Spark.*;
 
+import java.net.InetAddress;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
 import com.google.gson.Gson;
 
+import implementation.BullyAlgorithm;
 import implementation.IO;
 import implementation.Player;
 import implementation.Transmitter;
@@ -46,6 +48,12 @@ public class TransactionService {
 	// load balance counter
 	private static int loadBalance = 0;
 	
+	// bully component 
+	BullyAlgorithm bully;
+	
+	// port of this service
+	private int port = 0;
+	
 	// here we save the url's from our bank's
 	private List<String> bankServiceList = new ArrayList<String>(
 			
@@ -54,13 +62,32 @@ public class TransactionService {
 					 	  "http://localhost:4568/banks")			
 			);
 	
+	/**
+	 * Constructor
+	 * @param id - for the bully algorithm
+	 */
+	public TransactionService(int id, int port) {
+		bully = new BullyAlgorithm(id, getHost(port));
+		this.port = port;
+		port(port);
+	}
+	
+	/**
+	 * Constructor
+	 * @param id - for the bully algorithm
+	 */
+	public TransactionService(int id) {
+		bully = new BullyAlgorithm(id, "TODO");
+		this.port = 4567;
+	}
 	
 	/**
 	 * Service create a account
 	 * ein Konto erstellt werden kann mit
 	 * post /banks/{gameid}/players
 	 */
-	synchronized public void startCreatePlayerAccountService() {						
+	synchronized public void startCreatePlayerAccountService() {		
+		
 		// get the resource to this service
 		String currentResource = resourceManager.getTransactionResources().getCreatePlayerAccountResourceService();		
 		
@@ -233,6 +260,14 @@ public class TransactionService {
 			return initiatedTwoPhaseCommitProtocol(transmitter, bankServiceList, res, 201, 400);
 		});
 	}
+	
+	/**
+	 * This service is to check, if our transaction service is alive
+	 */
+	synchronized public void startBullyService() {		
+		bully.conintueElection(BullyAlgorithm.RESOURCE_PATH_2);
+		
+	}
 //================================================================================================
 //									PRIVATE HELPER METHOD'S		
 //================================================================================================		
@@ -362,14 +397,37 @@ public class TransactionService {
 		return false;
 	}
 	
+	/**
+	 * Method get the url from our service
+	 * @return String
+	 */
+	public String getHost() {		
+		return getHost(spark.Spark.SPARK_DEFAULT_PORT);
+	}		
+	
+	/**
+	 * Method get the url from our service
+	 * @param port - port from our service
+	 * @return String
+	 */
+	public String getHost(int port) {
+		String protocol = "http://";
+		String ip = InetAddress.getLoopbackAddress().getHostAddress();		
+		String result = protocol + ip + ":" + port;
+		return result;
+	}
+	
 	public static void main(String[] args) {
 		// create a object from our transaction service TS-Server / TwoPhaseCommitProtocl
-		TransactionService transactionService = new TransactionService();
+		TransactionService transactionService = new TransactionService(5);
+		transactionService.bully.setCoordinatorFlag(true);
+		transactionService.bully.setCoordinatorUrl(transactionService.getHost() + BullyAlgorithm.RESOURCE_PATH_2);
 		
 		/*
 		 *  here can a bank register by our transaction service
 		 *  starting test service
-		 */						
+		 */
+		transactionService.startBullyService();
 		transactionService.startCreatePlayerAccountService();		
 		transactionService.startCallAccountBalanceService();		
 		transactionService.startBankTransferToPlayerService();		
