@@ -76,9 +76,9 @@ public class TransactionService {
 	 * Constructor
 	 * @param id - for the bully algorithm
 	 */
-	public TransactionService(int id) {
-		bully = new BullyAlgorithm(id, "TODO");
+	public TransactionService(int id) {		
 		this.port = 4567;
+		bully = new BullyAlgorithm(id, getHost(port));
 	}
 	
 	/**

@@ -27,11 +27,11 @@ public class BullyAlgorithm {
 	// save current id from this object
 	private int id;
 	
-	// resource from this bully server
-	private String resource = "";
-	
 	// resource
 	public static final String RESOURCE_PATH_2 = "/transactionService/bully";
+	
+	// resource from this bully server
+	private String resource = "";
 	
 	// current coordinator url
 	private String coordinatorUrl = "http://localhost:4567" + RESOURCE_PATH_2;
@@ -58,6 +58,7 @@ public class BullyAlgorithm {
 //		processMap.put("http://localhost:4701" + RESOURCE_PATH_2, 3);
 //		processMap.put("http://localhost:4702" + RESOURCE_PATH_2, 2);
 //		processMap.put("http://localhost:4703" + RESOURCE_PATH_2, 1);
+		System.out.println(processMap);
 		this.id = id;
 		this.resource = resource + RESOURCE_PATH_2;
 	}
@@ -70,6 +71,10 @@ public class BullyAlgorithm {
 	
 	public String getCoordinatorUrl() {
 		return coordinatorUrl;
+	}
+	
+	public Map<String, Integer> getProcesMap() {
+		return processMap;
 	}
 //================================================================================================
 //											SETTER
@@ -103,8 +108,9 @@ public class BullyAlgorithm {
 		if ( !responseList.contains(MESSAGE_OK) ) {
 			// we was the new coordinator
 			setCoordinatorFlag(true);
-			setCoordinatorUrl(resource);
-			setToCoordinatorToAllBullies();			
+			System.out.println(getCoordinatorFlag());
+			setCoordinatorUrl(this.resource);
+			//setToCoordinatorToAllBullies();			
 			return;
 		}
 		setCoordinatorFlag(false);
@@ -139,8 +145,9 @@ public class BullyAlgorithm {
 			// we have a new coordinator
 			if ( BullyAlgorithm.MESSAGE_COORDINATOR.compareTo(inputMessage) == 0 ) {
 				setCoordinatorFlag(false);
-				setCoordinatorUrl(req.uri());
-				return "we have a new coordinator: " + req.uri();
+				String coordinatorUrl = req.host() + req.uri();
+				setCoordinatorUrl(coordinatorUrl);
+				return "we have a new coordinator: " + coordinatorUrl;
 			}
 			
 			// checked if the coordinator service was online
@@ -164,7 +171,8 @@ public class BullyAlgorithm {
 	 */
 	private void setToCoordinatorToAllBullies() {
 		for (Entry<String, Integer> map : processMap.entrySet()) {
-			io.request(map.getKey(), BullyAlgorithm.MESSAGE_COORDINATOR);
+			String response = io.request(map.getKey(), BullyAlgorithm.MESSAGE_COORDINATOR);
+			System.out.println(response);
 		}
 	}
 	

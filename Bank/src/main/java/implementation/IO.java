@@ -27,7 +27,8 @@ public class IO {
 				return MESSAGE_NOT_FOUND + url;
 			}
 			
-		} catch (UnirestException e) {
+//		} catch (UnirestException e) {
+		}	catch (Exception e) {
 			System.err.println(MESSAGE_NOT_FOUND + url);
 			return MESSAGE_NOT_FOUND + url;
 		}
