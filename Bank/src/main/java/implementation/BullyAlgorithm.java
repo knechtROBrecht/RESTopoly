@@ -108,9 +108,8 @@ public class BullyAlgorithm {
 		if ( !responseList.contains(MESSAGE_OK) ) {
 			// we was the new coordinator
 			setCoordinatorFlag(true);
-			System.out.println(getCoordinatorFlag());
 			setCoordinatorUrl(this.resource);
-			//setToCoordinatorToAllBullies();			
+			setToCoordinatorToAllBullies();			
 			return;
 		}
 		setCoordinatorFlag(false);
@@ -129,8 +128,6 @@ public class BullyAlgorithm {
 		post(url, (req, res) -> {
 			
 			String inputMessage = req.body();
-			
-			System.out.println("input message from client: " + inputMessage);
 			
 			// we do a election
 			if ( BullyAlgorithm.MESSAGE_ELECTOIN.compareTo(inputMessage) == 0 ) {				
@@ -171,6 +168,12 @@ public class BullyAlgorithm {
 	 */
 	private void setToCoordinatorToAllBullies() {
 		for (Entry<String, Integer> map : processMap.entrySet()) {
+			
+			// dont notify my self
+			if ( id == map.getValue() ) {
+				continue;
+			}
+			
 			String response = io.request(map.getKey(), BullyAlgorithm.MESSAGE_COORDINATOR);
 			System.out.println(response);
 		}

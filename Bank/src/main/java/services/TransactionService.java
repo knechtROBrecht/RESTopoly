@@ -96,6 +96,11 @@ public class TransactionService {
 		// bind our service to our resource
 		post(currentResource, (req, res) -> {
 			
+			// precondition: do nothig, if you are not the coordinator!
+			if ( !bully.getCoordinatorFlag() ) {
+				return "I am not the coordinator, i am sorry";
+			}
+			
 			// initialize the transmitter object for the communication beetwen ts and a bank	
 			Transmitter transmitter = new Transmitter
 					(
@@ -123,6 +128,11 @@ public class TransactionService {
 
 		// bind current service resource
 		get(currentServiceResource, (req, res) -> {
+			
+			// precondition: do nothig, if you are not the coordinator!
+			if (!bully.getCoordinatorFlag()) {
+				return "I am not the coordinator, i am sorry";
+			}
 			
 			// balance service
 			loadBalance ++;
@@ -161,7 +171,13 @@ public class TransactionService {
 		
 		System.out.println("start bank transfer to player service: " + currentServiceResource);
 		
-		post(currentServiceResource, (req, res) -> {			
+		post(currentServiceResource, (req, res) -> {
+
+			// precondition: do nothig, if you are not the coordinator!
+			if (!bully.getCoordinatorFlag()) {
+				return "I am not the coordinator, i am sorry";
+			}
+			
 			String reason = req.body();
 			
 			// precondition
@@ -199,6 +215,11 @@ public class TransactionService {
 		// bind current service resource
 		post(currentServiceResource, (req, res) -> {
 			
+			// precondition: do nothig, if you are not the coordinator!
+			if (!bully.getCoordinatorFlag()) {
+				return "I am not the coordinator, i am sorry";
+			}
+			
 			String reason = req.body();
 			
 			// precondition
@@ -235,6 +256,11 @@ public class TransactionService {
 
 		// bind current service resource
 		post(currentServiceResource, (req, res) -> {
+			
+			// precondition: do nothig, if you are not the coordinator!
+			if (!bully.getCoordinatorFlag()) {
+				return "I am not the coordinator, i am sorry";
+			}
 
 			String reason = req.body();
 
@@ -417,21 +443,51 @@ public class TransactionService {
 		return result;
 	}
 	
-	public static void main(String[] args) {
-		// create a object from our transaction service TS-Server / TwoPhaseCommitProtocl
+//	public static void main(String[] args) {
+//		// create a object from our transaction service TS-Server / TwoPhaseCommitProtocl
+//		TransactionService transactionService = new TransactionService(5);
+//		transactionService.bully.setCoordinatorFlag(true);
+//		transactionService.bully.setCoordinatorUrl(transactionService.getHost() + BullyAlgorithm.RESOURCE_PATH_2);
+//		
+//		/*
+//		 *  here can a bank register by our transaction service
+//		 *  starting test service
+//		 */
+//		transactionService.startBullyService();
+//		transactionService.startCreatePlayerAccountService();		
+//		transactionService.startCallAccountBalanceService();		
+//		transactionService.startBankTransferToPlayerService();		
+//		transactionService.startBankTransferFromPlayerService();		
+//		transactionService.startPlayerTransferToPlayerService();
+//	}
+	
+	public static void main(String[] args) throws InterruptedException {		
 		TransactionService transactionService = new TransactionService(5);
-		transactionService.bully.setCoordinatorFlag(true);
-		transactionService.bully.setCoordinatorUrl(transactionService.getHost() + BullyAlgorithm.RESOURCE_PATH_2);
-		
-		/*
-		 *  here can a bank register by our transaction service
-		 *  starting test service
-		 */
-		transactionService.startBullyService();
-		transactionService.startCreatePlayerAccountService();		
-		transactionService.startCallAccountBalanceService();		
-		transactionService.startBankTransferToPlayerService();		
-		transactionService.startBankTransferFromPlayerService();		
+
+		// we are the new coordinator, start all transaction services
+		transactionService.startCreatePlayerAccountService();
+		transactionService.startCallAccountBalanceService();
+		transactionService.startBankTransferToPlayerService();
+		transactionService.startBankTransferFromPlayerService();
 		transactionService.startPlayerTransferToPlayerService();
+		transactionService.startBullyService();
+	
+		
+		transactionService.bully.holdElection();
+		
+		while ( true ) {
+			
+			Thread.sleep(5000);
+			
+			// new election
+			transactionService.bully.holdElection();
+			
+			if ( transactionService.bully.getCoordinatorFlag() ) {
+				System.out.println("TransactionService 1 is the current coordinator");
+			} else {
+				System.out.println("TransactionService 1 is not the coordinator");
+			}			
+			// now we are the new coordinator or not
+		}		
 	}
 }

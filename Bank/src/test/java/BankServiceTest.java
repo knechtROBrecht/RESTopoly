@@ -1,16 +1,11 @@
 import static org.junit.Assert.*;
 
-import org.junit.Ignore;
 import org.junit.Test;
 
 import com.google.gson.Gson;
 import com.mashape.unirest.http.HttpResponse;
 import com.mashape.unirest.http.Unirest;
 import com.mashape.unirest.http.exceptions.UnirestException;
-import com.mashape.unirest.request.HttpRequest;
-
-import implementation.Bank;
-import implementation.Player;
 import services.BankService;
 
 /**
@@ -22,6 +17,7 @@ public class BankServiceTest {
 	Gson gson = new Gson();
 		
 	static final String URL = "http://localhost:4567";
+//	static final String URL = "http://localhost:4700";
 	//static final String URL = "http://192.168.99.100:4567";
 	
 	// services
