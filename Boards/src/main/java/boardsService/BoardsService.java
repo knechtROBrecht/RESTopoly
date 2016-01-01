@@ -5,6 +5,7 @@ import static spark.Spark.post;
 import java.util.*;
 
 import static spark.Spark.before;
+import static spark.Spark.get;
 import static spark.Spark.halt;
 import static spark.Spark.port;
 import com.google.gson.Gson;
@@ -18,10 +19,22 @@ import implementation.*;
  */
 public class BoardsService {
 
-	private static Map<String, Board> boards = new HashMap<String, Board>();
+//	private static Map<String, Board> boards = new HashMap<String, Board>();
+//	
+//	private static Board findBoard(String gameID) {
+//		return boards.get(gameID);
+//	}
 	
+	static List<Board> boardsList = new ArrayList<>();
+
 	private static Board findBoard(String gameID) {
-		return boards.get(gameID);
+		for (Board board : boardsList) {
+			if (board.getGameID() == gameID) {
+				return board;
+			}
+		}
+
+		return null;
 	}
 
 	/**
@@ -43,7 +56,40 @@ public class BoardsService {
 			if (null == findBoard(gameID))
 				halt(404, "Board existiert nicht!");
 		});
+		
+		// Retrieves every existing board
+		get("/boards" , (req, res) -> {
+			List<String> uris = new ArrayList<>();
+			
+			for(Board b : boardsList) {
+				uris.add("/games/" + b.getID());
+			}
+			
+			return gson.toJson(uris);			
+		});
 
+		// Creates a new Board
+		post("/boards/:gameid" , (req, res) -> {
+			String gameID = req.params(":gameid");
+			
+			Board board = new Board(gameID);
+			boardsList.add(board);
+			return "/boards/" + board.getID();
+		});		
+		
+		get("/boards/:gameid/players", (req, res) -> {
+			String gameID = req.params(":gameid");
+			
+			Board board = findBoard(gameID);
+			
+			List<String> uris = new ArrayList<>();
+			
+			for(Player player : board.getPlayers()) {
+				uris.add("/games/" + gameID + "/players/" + player.getId());
+			}
+			
+			return gson.toJson(uris);
+		});
 		
 		/**
 		 * 

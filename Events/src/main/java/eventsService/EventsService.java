@@ -33,7 +33,13 @@ public class EventsService {
 			if(eventsMap.isEmpty()) {
 				return "Es existieren keine Events";
 			} else {
-				return gson.toJson(eventsMap.values());
+				List<String> uris = new ArrayList<>();
+				
+				for(Integer i : eventsMap.keySet()) {
+					uris.add("/events/" + i);
+				}
+				
+				return gson.toJson(uris);
 			}
 		});		
 		
