@@ -39,6 +39,24 @@ public class GamesService {
 			if (null == game.getPlayerByID(req.params(":playerid")))
 				halt(404, "Player existiert nicht!");
 		});
+		
+		before(("/games/:gameid/players/*"), (req, res) -> {
+			Game game = findGame(req.params(":gameid"));
+
+			if (null == game.getPlayerByID(req.params(":playerid")))
+				halt(404, "Player existiert nicht!");
+		});		
+		
+		// Retrieves every existing game
+		get("/games" , (req, res) -> {
+			List<String> uris = new ArrayList<>();
+			
+			for(Game g : gameList) {
+				uris.add("/games/" + g.getID());
+			}
+			
+			return gson.toJson(uris);
+		});
 
 		// Starts a new Game
 		post("/games", (req, res) -> {
@@ -49,6 +67,21 @@ public class GamesService {
 			res.status(201);
 			res.type("application/json");
 			return gson.toJson(newGame);
+		});
+		
+		// Retrieves all Players for a given Game(id)
+		get("/games/:gameid/players", (req, res) -> {
+			String gameID = req.params(":gameid");
+			
+			Game game = findGame(gameID);
+			
+			List<String> uris = new ArrayList<>();
+			
+			for(Player player : game.getPlayersList()) {
+				uris.add("/games/" + gameID + "/players/" + player.getID());
+			}
+			
+			return gson.toJson(uris);
 		});
 
 		// Adds a new player to a existing game

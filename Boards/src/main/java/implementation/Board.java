@@ -8,8 +8,15 @@ public class Board {
 	private List<Field> fields = new ArrayList<>();
 	private List<Player> players = new ArrayList<>();
 //	private Map<String, Integer> positions = new HashMap<>();
+	private String gameID;
+	private static int boardsCounter = 0;
+	private String boardID;
 
-	public Board() {
+	public Board(String gameID) {
+		this.gameID = gameID;
+		this.boardID = Integer.toString(boardsCounter);
+		boardsCounter++;
+		
 		fields.add(new Field(new Place("Los")));
 		fields.add(new Field(new Place("Badstraße")));
 		fields.add(new Field(new Place("Gemeinschaftsfeld")));
@@ -114,5 +121,20 @@ public class Board {
 		player.setPosition(position);
 		fields.get(position).addPlayer(player.getId());
 //		positions.put(player.getId(), position);
+	}
+	
+	public String getGameID() {
+		return this.gameID;
+	}
+	
+	public void setGameID(String gameID) {
+		this.gameID = gameID;
+	}
+	
+	/**
+	 * @^1return Unique identifier for this board
+	 */
+	public String getID() {
+		return this.boardID;
 	}
 }
