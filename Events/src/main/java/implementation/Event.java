@@ -1,56 +1,65 @@
 package implementation;
 
-/**
- * Implementation of the Event-Scheme
- * 
- * @author Flah
- * @see <a href="https://pub.informatik.haw-hamburg.de/home/pub/prof/kossakowski_klaus-peter/wise2015/verteiltesysteme/step3.raml">API</a>
- */
 public class Event {
-	
-	/**
-	 * Internal type of the event (e.g. bank transfer, rent)
-	 */
+
+	private String id;
+	private String uri;
 	private String type;
-	
-	/**
-	 * Human readable name for this event
-	 */
 	private String name;
-	
-	/**
-	 * Reason for this event
-	 */
 	private String reason;
-	
-	/**
-	 * The uri of the resource related to this event where more information may be found (e.g. an uri to a transfer or similar)
-	 */
 	private String resource;
+	private String player;
 	
-	/**
-	 * The player who issued this event
-	 */
-	private Player player;
 	
-	/**
-	 * Public constructor
-	 * this class can only be initiated with the following params (all required, see SPEC)
-	 * 
-	 * @param type
-	 * @param name
-	 * @param reason
-	 */
-	public Event(String type, String name, String reason) {
+	public Event(String uri, String type, String name, String reason, String resource, String player){
+		this.uri = uri;
 		this.type = type;
 		this.name = name;
 		this.reason = reason;
+		this.resource = resource;
+		this.player = player;
 	}
 	
-	//=======================================================
-	//		  GENERATED GETTER AND SETTER METHODS
-	//=======================================================
+	public String getId() {
+		return id;
+	}
+
+	public void setId(String id) {
+		this.id = id;
+	}
 	
+	public String getUri() {
+		return uri;
+	}
+
+	public void setUri(String uri) {
+		this.uri = uri;
+	}
+
+	public String getType() {
+		return type;
+	}
+
+	public void setType(String type) {
+		this.type = type;
+	}
+
+	public String getName() {
+		return name;
+	}
+
+	public void setName(String name) {
+		this.name = name;
+	}
+
+	public String getReason() {
+		return reason;
+	}
+
+	public void setReason(String reason) {
+		this.reason = reason;
+	}
+
 	public String getResource() {
 		return resource;
 	}
@@ -59,23 +68,11 @@ public class Event {
 		this.resource = resource;
 	}
 
-	public Player getPlayer() {
+	public String getPlayer() {
 		return player;
 	}
 
-	public void setPlayer(Player player) {
+	public void setPlayer(String player) {
 		this.player = player;
-	}
-
-	public String getType() {
-		return type;
-	}
-
-	public String getName() {
-		return name;
-	}
-
-	public String getReason() {
-		return reason;
-	}
+	}		
 }

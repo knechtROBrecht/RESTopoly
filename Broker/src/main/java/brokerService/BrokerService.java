@@ -1,6 +1,7 @@
 package brokerService;
 
 import static spark.Spark.*;
+import static spark.SparkBase.port;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -22,9 +23,13 @@ public class BrokerService {
 
 	static Map<String, Broker> brokers = new HashMap<>();
 	// Games 0, Boards 1, Dice 2, Bank 3, Events 4, Brokers 5
-	static String BaseUrl = "https://vs-docker.informatik.haw-hamburg.de/ports/17474/brokers";
+	static String serviceUri = "https://vs-docker.informatik.haw-hamburg.de/ports/17474/brokers";
 
 	public static void main(String[] args) {
+		
+		if(args.length > 0){
+			port(Integer.valueOf(args[0]));
+		}
 
 		Gson gson = new Gson();
 
@@ -83,7 +88,7 @@ public class BrokerService {
 			if (broker.hasEstate(req.params(":placeid"))) {
 				res.status(200);
 				// TODO hier egtl mit der uri antworten
-				String response = BaseUrl + "/" + req.params(":gameid") + "/places/" + req.params(":placeid");
+				String response = serviceUri + "/" + req.params(":gameid") + "/places/" + req.params(":placeid");
 				return gson.toJson(response);
 			}
 
@@ -92,7 +97,7 @@ public class BrokerService {
 			res.status(201);
 			res.type("application/json");
 			// TODO mit der uri antworten macht das sinn?
-			String response = BaseUrl + "/" + req.params(":gameid") + "/places/" + req.params(":placeid");
+			String response = serviceUri + "/" + req.params(":gameid") + "/places/" + req.params(":placeid");
 			return gson.toJson(response);
 		});
 

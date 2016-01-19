@@ -1,6 +1,8 @@
 package eventsService;
 
 import static spark.Spark.*;
+import static spark.SparkBase.port;
+
 import implementation.Event;
 import implementation.Subscription;
 
@@ -8,76 +10,146 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.UUID;
 
 import com.google.gson.Gson;
 
 public class EventsService {
 	
-	// Uniqueidentifier fuer ein event was per REST reinkommt
-	private static int eventID = 0;
+	private static String serviceUri = "";
+	
+	private static Map<String, List<Event>> events = new HashMap<String, List<Event>>();
+	private static List<Subscription> subscriptions = new ArrayList<>();
 	
 	public static void main(String[] args) {
-		// Key = EventID; Value = EventObject
-		Map<Integer, Event> eventsMap = new HashMap<>();
 		
-		// Speichert alle subscriptions
-		List<Subscription> subscricptionsList = new ArrayList<>();
+		if(args.length > 0){
+			port(Integer.valueOf(args[0]));
+		}
 		
 		Gson gson = new Gson();
 		
-		// List of all available events
 		get("/events", (req, res) -> {
-			//String gameID = req.queryParams("gameid");			
-			//System.out.println("GameID GET: " + gameID);			
-			
-			if(eventsMap.isEmpty()) {
-				return "Es existieren keine Events";
-			} else {
-				return gson.toJson(eventsMap.values());
+			String gameID = req.queryParams("gameid");
+			if(gameID != null){
+				List<Event> GameEvents = events.get(gameID);
+				if(events == null){
+					res.status(404);
+					return null;
+				}else{
+					res.status(200);
+					return gson.toJson(GameEvents);
+				}
 			}
+			res.status(404);
+			return null;
 		});		
 		
-		// Add new Event for a game
 		post("/events", (req, res) -> {
-			//String gameID = req.queryParams("gameid");
-			//System.out.println("GameID POST: " + gameID);
-			
-			// Event Objekt aus Json Body erstellen
-			Event event = gson.fromJson(req.body(), Event.class);	
-			
-			// Event mit identifier abspeichern
-			eventsMap.put(eventID, event);
-			
-			// ID des gespeicherten events zurueckgeben und internen zaehler inkrementieren
-			return "/events/" + eventID++;
+			String gameID = req.queryParams("gameid");
+			if(gameID != null){
+				Event event = gson.fromJson(req.body(), Event.class);
+				if(event == null){
+					res.status(404);
+					return null;
+				}else{
+					event.setId(UUID.randomUUID().toString());
+					event.setUri(serviceUri + "/" + event.getId());
+					addEvent(gameID, event);
+					
+					res.status(201);
+					res.header("Location", event.getUri());
+					return gson.toJson(event);
+				}
+			}
+			res.status(404);
+			return null;
 		});
 		
-		// Gibt das Event als JSon zurueck
-		get("/events/:eventid", (req, res) -> {
-			String eventID = req.params("eventid");
-			
-			if(eventsMap.containsKey(eventID)) {
+		delete("/events", (req, res) -> {
+			String gameID = req.queryParams("gameid");
+			if(gameID != null){
+				events.put(gameID, new ArrayList<Event>());
 				res.status(200);
-				return gson.toJson(eventsMap.get(eventID));
-			} else {
-				res.status(404);
-				return "Event not found";
+				return true;
 			}
+			res.status(404);
+			return null;
+		});	
+		
+		get("/events/:eventid", (req, res) -> {
+			String gameID = req.queryParams("gameid");
+			String eventid = req.params(":eventid");
+			if(gameID != null){
+				List<Event> EventList = events.get(gameID);
+				for (Event event : EventList) {
+					if(event.getId().equals(eventid)){
+						res.status(200);
+						return gson.toJson(event);
+					}
+				}
+				res.status(404);
+				return null;
+			}
+			res.status(404);
+			return null;
 		});		
 		
 		get("/events/subscriptions", (req, res) -> {
-			if(subscricptionsList.isEmpty()) {
-				return "No Subscriptions";
-			} else {
-				return gson.toJson(subscricptionsList);
+			String gameID = req.queryParams("gameid");
+			if(gameID != null){
+				List<Subscription> subs = new ArrayList<>();
+				for (Subscription subscription : subscriptions) {
+					if(subscription.getGameid().equals(gameID)){
+						subs.add(subscription);
+					}
+				}
+				res.status(200);
+				return gson.toJson(subs); 
 			}
+			res.status(404);
+			return null;
 		});		
 		
 		post("/events/subscriptions", (req, res) -> {
-			// Event Objekt aus Json Body erstellen
-			Subscription subscription = gson.fromJson(req.body(), Subscription.class);
-			subscricptionsList.add(subscription);
-			return "";
+			String gameID = req.queryParams("gameid");
+			if(gameID != null){
+				Subscription subscription = gson.fromJson(req.body(), Subscription.class);
+				subscription.setGameid(gameID);
+				subscription.setId(UUID.randomUUID().toString());
+				subscription.setUri(serviceUri + "/subscription/" + subscription.getId());
+				
+				subscriptions.add(subscription);
+				
+				res.header("Location", subscription.getUri());
+				res.status(200);
+				return gson.toJson(subscription);
+			}
+			res.status(404);
+			return null;
 		});
+		
+		delete("/events/subscriptions/subscriptions/:subscription", (req, res) -> {
+			String gameID = req.queryParams("gameid");
+			if(gameID != null){
+				for (Subscription subscription : subscriptions) {
+					if(subscription.getId().equals(req.params(":subscription"))){
+						subscriptions.remove(subscription);
+						return true;
+					}
+				}
+			}
+			res.status(404);
+			return null;
+		});
+	}
+
+	private static void addEvent(String gameID, Event event) {
+		List<Event> eventList = events.get(gameID);
+		if(eventList == null){
+			eventList = new ArrayList<Event>();
+		}
+		eventList.add(event);
+		events.put(gameID, eventList);
 	}
 }
