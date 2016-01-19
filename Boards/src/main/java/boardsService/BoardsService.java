@@ -1,10 +1,27 @@
 package boardsService;
 
-import static spark.Spark.*;
+import static spark.Spark.before;
+import static spark.Spark.delete;
+import static spark.Spark.get;
+import static spark.Spark.halt;
+import static spark.Spark.post;
+import static spark.Spark.put;
+import static spark.SparkBase.port;
 
-import java.util.*;
+import java.util.HashMap;
+import java.util.Map;
+
 import com.google.gson.Gson;
-import implementation.*;
+
+import implementation.Board;
+import implementation.Components;
+import implementation.Field;
+import implementation.Game;
+import implementation.Place;
+import implementation.Player;
+import implementation.Roll;
+import implementation.RollResponse;
+import implementation.Throw;
 
 /**
  * our Boards service
@@ -16,7 +33,10 @@ import implementation.*;
 public class BoardsService {
 
 	private static Map<String, Board> boards = new HashMap<>();
-	private static BoardComponents bc;
+//	private static Components bc;
+	private static String serviceUri = "";
+	private static String yellowPageUri = "http://vs-docker.informatik.haw-hamburg.de:8053/services";
+	
 	private static Board findBoard(String gameID) {
 		return boards.get(gameID);
 	}
@@ -64,7 +84,7 @@ public class BoardsService {
 		 * 		gets the board belonging to the game 
 		 */
 		get(("/boards/:gameid"), (req, res) -> {
-			return boards.get(req.params(":gameid"));
+			return gson.toJson(boards.get(req.params(":gameid")));
 		});
 		
 		/**
@@ -72,10 +92,15 @@ public class BoardsService {
 		 * 		makes sure there is a board for the gameid with the right game settings  
 		 */
 		put(("/boards/:gameid"), (req, res) -> {
-			bc = gson.fromJson(req.body(), BoardComponents.class);
+			//bc = gson.fromJson(req.body(), Components.class);
+			Game game = gson.fromJson(req.body(), Game.class);
 			Board board = new Board();
+			board.setGame(game);
+			board.setUri(serviceUri + "/" + game.getGameid()); //TODO woher serviceuri? was wird als BC übergeben? sind die bc im game?
 			boards.put(req.params(":gameid"), board);
-			return board;
+		
+			res.header("Location", board.getUri());
+			return gson.toJson(board);
 		});
 		
 		/**
@@ -83,7 +108,7 @@ public class BoardsService {
 		 * 		deletes the board to the game, effectivly ending the game 
 		 */
 		delete(("/boards/:gameid"), (req, res) -> {
-			return boards.remove(req.params(":gameid"));
+			return gson.toJson(boards.remove(req.params(":gameid")));
 		});
 		
 		/**
@@ -92,7 +117,8 @@ public class BoardsService {
 		 */
 		get(("/boards/:gameid/players"), (req, res) -> {
 			Board board = boards.get(req.params(":gameid"));
-			return board.getPositions();
+			//TODO playerpositions oder player?
+			return gson.toJson(board.getPositions());
 		});
 		
 		/**
@@ -101,7 +127,7 @@ public class BoardsService {
 		 */
 		get(("/boards/:gameid/players/:playerid"), (req, res) -> {
 			Board board = boards.get(req.params(":gameid"));
-			return board.getPlayer(req.params(":playerid"));
+			return gson.toJson(board.getPlayer(req.params(":playerid")));
 		});
 		
 		/**
@@ -111,13 +137,15 @@ public class BoardsService {
 		put(("/boards/:gameid/players/:playerid"), (req, res) -> {
 			Board board = boards.get(req.params(":gameid"));
 			Player player = gson.fromJson(req.body(), Player.class);
+			player.setUri(serviceUri + "/" + req.params(":gameid") + "/" + player.getId());
 			
 			if(!board.hasPlayer(player.getId())) 
 				board.addPlayer(player);
 			
 			board.updatePosition(player, player.getPosition());
 			
-			return player;
+			res.header("Location", player.getUri());
+			return gson.toJson(player);
 		});
 		
 		/**
@@ -126,7 +154,7 @@ public class BoardsService {
 		 */
 		delete(("/boards/:gameid/players/:playerid"), (req, res) -> {
 			Board board = boards.get(req.params(":gameid"));
-			return board.removePlayer(req.params(":playerid"));
+			return gson.toJson(board.removePlayer(req.params(":playerid")));
 		});
 		
 		/**
@@ -138,7 +166,7 @@ public class BoardsService {
 			Player player = board.getPlayer(req.params(":playerid"));
 		
 			board.updatePosition(player, player.getPosition() + gson.fromJson(req.body(), Integer.class));
-			return null;
+			return "";
 		});
 		
 		/**
@@ -164,7 +192,7 @@ public class BoardsService {
 				// return result
 				res.type("application/json");
 				res.status(200);
-				return new RollResponse(player, board);
+				return gson.toJson(new RollResponse(player, board));
 			} else {
 				res.status(500);
 				return "keine Rolls erhalten";
@@ -176,7 +204,7 @@ public class BoardsService {
 		 * 		List of available place
 		 */
 		get(("/boards/:gameid/places"), (req, res) -> {
-			return boards.get(req.params(":gameid")).getPlaces();
+			return gson.toJson(boards.get(req.params(":gameid")).getPlaces());
 		});
 		
 		/**
@@ -184,22 +212,26 @@ public class BoardsService {
 		 * 		Gets a places
 		 */
 		get(("/boards/:gameid/places/:placeid"), (req, res) -> {
-			return boards.get(req.params(":gameid")).getPlace(req.params(":placeid"));
+			return gson.toJson(boards.get(req.params(":gameid")).getPlace(req.params(":placeid")));
 		});
 		
 		/**
 		 * Description:
 		 * 		places a places
 		 */
-		put(("/boards/:gameid/places/:placeid"), (req, res) -> {
+		put(("/boards/:gameid/places/:place"), (req, res) -> {
 			Board board = boards.get(req.params(":gameid"));
 			Place place = gson.fromJson(req.body(), Place.class);
 			
 			// bestehendes "place" in fields wird umbenannt in neuen namen.
+			Field field = new Field(place);
+			field.setUri(serviceUri + "/" + req.params(":gameid") + "/places/" + req.params(":place"));
+			board.getFields().add(field);
 			
-			
-			return board.addPlace(place);
+			res.header("Location", field.getUri());
+			return gson.toJson(field);
 		});
+
 	}
 
 }

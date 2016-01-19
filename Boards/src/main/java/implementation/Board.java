@@ -1,8 +1,14 @@
 package implementation;
 
-import java.util.*;
-import java.util.stream.Collector;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 import java.util.stream.Collectors;
+
+import com.google.gson.Gson;
+import com.mashape.unirest.http.Unirest;
+import com.mashape.unirest.http.exceptions.UnirestException;
 
 public class Board {
 
@@ -10,7 +16,8 @@ public class Board {
 	private List<Field> fields = new ArrayList<>();
 	private Map<String, Integer> positions = new HashMap<String, Integer>();
 	private List<Player> players = new ArrayList<>();
-		
+	private Game game;
+
 	public Board() {
 		fields.add(new Field(new Place("Los")));
 		fields.add(new Field(new Place("Badstraße")));
@@ -47,6 +54,7 @@ public class Board {
 		fields.add(new Field(new Place("Parkstraße")));
 		fields.add(new Field(new Place("Zusatzsteuer")));
 		fields.add(new Field(new Place("Schlossallee")));
+		registerFields();
 	}
 
 	public List<Field> getFields() {
@@ -85,14 +93,29 @@ public class Board {
 		int oldPosition = player.getPosition();
 
 		if (!fields.get(oldPosition).removePlayer(player.getId())) {
-			//TODO throw exception
+			// TODO throw exception
 		}
 
 		int position = newPosition % fields.size();
-		//TODO wenn über los dann geld
+		// wenn über los dann geld
+		// TODO position per Broker verändern
+		try {
+			visitWithBroker(player, fields.get(position));
+		} catch (UnirestException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
 		player.setPosition(position);
 		fields.get(position).addPlayer(player.getId());
 		positions.put(player.getId(), position);
+	}
+
+	private void visitWithBroker(Player player, Field field) throws UnirestException {
+		Unirest.post(game.getComponents().broker + "/places/{placeid}/visit/{playerid}")
+				.header("accept", "application/json")
+				.routeParam("placeid", field.getPlace().getName())
+                .routeParam("playerid", player.getId())
+				.asJson();
 	}
 
 	public boolean removePlayer(String playerID) {
@@ -105,27 +128,58 @@ public class Board {
 
 	public Player getPlayer(String playerID) {
 		for (Player player : players) {
-			if(player.equals(playerID)){
+			if (player.equals(playerID)) {
 				return player;
 			}
 		}
 		return null;
 	}
 
-	public void addPlayer(Player player) {		
-		players.add(player);		
+	public void addPlayer(Player player) {
+		players.add(player);
 	}
-	
+
 	public List<Place> getPlaces() {
 		return fields.stream().map(p -> p.getPlace()).collect(Collectors.toList());
 	}
-	
+
 	public Place getPlace(String placeID) {
 		return fields.stream().filter(f -> f.getPlace().getName() == placeID).findFirst().get().getPlace();
 	}
 
 	public Place updatePlace(Place place) {
-		
-		return null;
+		return null; // TODO
+	}
+
+	public Game getGame() {
+		return game;
+	}
+
+	public void setGame(Game game) {
+		this.game = game;
+	}
+
+	public void registerFields() {
+		try {
+			for (Field field : fields) {
+				registerPlace(field.getPlace().getName());
+			}
+		} catch (UnirestException e) {
+			e.printStackTrace();
+		}
+
+	}
+
+	public void registerPlace(String placeName) throws UnirestException {
+		Estate estate = new Estate();
+		estate.setPlace(placeName);
+		Gson gson = new Gson();
+
+		Unirest.put(game.getComponents().broker + "/{gameid}/places/{placeid}")
+				.header("accept", "application/json")
+				.routeParam("gameid", game.getGameid())
+				.routeParam("placeid", placeName)
+				.body(gson.toJson(estate))
+				.asJson();
 	}
 }

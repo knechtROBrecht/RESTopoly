@@ -5,6 +5,15 @@ import java.util.List;
 
 public class Field {
 	
+	private String uri;
+	public String getUri() {
+		return uri;
+	}
+
+	public void setUri(String uri) {
+		this.uri = uri;
+	}
+
 	private Place place;
 	private List<String> players = new ArrayList<String>();
 
