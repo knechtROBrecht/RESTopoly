@@ -5,7 +5,7 @@ public class Player {
 	private String id;
     private String name;
     private String uri;
-    private Integer position = 0;
+    private String ready;
     
     public Player(String id){
     	this.id = id;
@@ -29,12 +29,15 @@ public class Player {
 	public void setUri(String uri) {
 		this.uri = uri;
 	}
-	public Integer getPosition() {
-		return position;
+
+	public String getReady() {
+		return ready;
 	}
-	public void setPosition(Integer position) {
-		this.position = position;
+
+	public void setReady(String ready) {
+		this.ready = ready;
 	}
+
 	public Place getPlace() {
 		return place;
 	}

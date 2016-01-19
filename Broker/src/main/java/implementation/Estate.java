@@ -8,14 +8,31 @@ public class Estate {
 	//the playerid of the owner of the place
     private String owner = "";
     //The value of the place, i.e. for how much it may be bought or sold
-    private Integer value = 0;
+    private int value = 0;
     //Rent at current level
     private List<Integer> rent = new ArrayList<>();
     //Cost for house upgrade
     private List<Integer> cost = new ArrayList<>();
     //amount of houses set on the estate	
     private Integer houses = 0;
-	
+    //the uri to the visit resource
+    private String visit;
+    //the uri to the hypocredit of the estate
+	private String hypocredit;
+    
+    
+	public String getVisit() {
+		return visit;
+	}
+	public void setVisit(String visit) {
+		this.visit = visit;
+	}
+	public String getHypocredit() {
+		return hypocredit;
+	}
+	public void setHypocredit(String hypocredit) {
+		this.hypocredit = hypocredit;
+	}
 	public String getPlace() {
 		return place;
 	}
@@ -28,7 +45,7 @@ public class Estate {
 	public void setOwner(String owner) {
 		this.owner = owner;
 	}
-	public Integer getValue() {
+	public int getValue() {
 		return value;
 	}
 	public void setValue(Integer value) {
@@ -51,6 +68,17 @@ public class Estate {
 	}
 	public void setHouses(Integer houses) {
 		this.houses = houses;
+	}
+	public boolean hasOwner() {
+		return !owner.equals("");
+	}
+	
+	public int getCurrentRent(){
+		return this.rent.get(this.houses);
+	}
+	
+	public int getCurrentCost(){
+		return this.cost.get(this.houses);
 	}
 
 }
