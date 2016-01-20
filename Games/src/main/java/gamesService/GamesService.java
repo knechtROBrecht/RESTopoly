@@ -3,29 +3,64 @@ package gamesService;
 import static spark.Spark.*;
 import static spark.SparkBase.port;
 
+
+import java.security.KeyManagementException;
+import java.security.KeyStoreException;
+import java.security.NoSuchAlgorithmException;
 import java.util.ArrayList;
 import java.util.List;
 
-import com.google.gson.Gson;
 
+import javax.net.ssl.SSLContext;
+
+
+import org.apache.http.conn.ssl.SSLConnectionSocketFactory;
+import org.apache.http.conn.ssl.SSLContexts;
+import org.apache.http.conn.ssl.TrustSelfSignedStrategy;
+import org.apache.http.impl.client.CloseableHttpClient;
+import org.apache.http.impl.client.HttpClients;
+import org.json.JSONObject;
+
+
+import com.google.gson.Gson;
+import com.mashape.unirest.http.HttpResponse;
+import com.mashape.unirest.http.JsonNode;
+import com.mashape.unirest.http.Unirest;
+import com.mashape.unirest.http.exceptions.UnirestException;
+
+
+import implementation.Boards;
+import implementation.Components;
 import implementation.Game;
+import implementation.GameResponse;
 import implementation.Player;
+import implementation.ServiceDescription;
 
 @SuppressWarnings("unused")
 public class GamesService {
 
 	static List<Game> gameList = new ArrayList<Game>();
+	
+	static String serviceUri = "http://localhost:4560";
+//*
+	private static String yellowPageUri = "http://vs-docker.informatik.haw-hamburg.de:8053/services";
+/*/		
+	private static String yellowPageUri = "http://vs-docker.informatik.haw-hamburg.de/ports/8053/services";
+*/	
+	private static ServiceDescription service = new ServiceDescription("GamesRFYD", "Games Service", "games", serviceUri);
 
-	private static Game findGame(String id) {
-		for (Game game : gameList) {
-			if (game.getID().equals(id))
-				return game;
-		}
-
-		return null;
-	}
-
-	public static void main(String[] args) {
+	public static void main(String[] args) throws KeyManagementException, NoSuchAlgorithmException, KeyStoreException {
+		
+		SSLContext sslcontext = SSLContexts.custom()
+				.loadTrustMaterial(null, new TrustSelfSignedStrategy())
+				.build();
+		SSLConnectionSocketFactory sslsf = new SSLConnectionSocketFactory(sslcontext);
+		CloseableHttpClient httpclient = HttpClients.custom()
+				.setSSLSocketFactory(sslsf)
+				.build();
+				Unirest.setHttpClient(httpclient);
+		
+		
 		if(args.length > 0){
 			port(Integer.valueOf(args[0]));
 		}
@@ -51,9 +86,10 @@ public class GamesService {
 		 * 		returns all available games 
 		 */
 		get("/games", (req, res) -> {
-			
 			res.type("application/json");
-			return gson.toJson(gameList);
+			GameResponse gR = new GameResponse();
+			gR.gameList = gameList;
+			return gson.toJson(gR);
 		});
 
 		/**
@@ -62,8 +98,17 @@ public class GamesService {
 		 */
 		post("/games", (req, res) -> {
 			Game newGame = new Game();
+			newGame.uri = serviceUri + "/" + newGame.getID();
 			gameList.add(newGame);
-			ServiceApi.newBoard(newGame.getID());
+			
+			Components components = gson.fromJson(req.body(), Components.class);
+			newGame.setComponents(components);
+			
+			newGame.getComponents().boards = ServiceApi.newBoard(newGame, components);
+			
+			
+//			ServiceApi.newBank();
+//			ServiceApi.newBroker(newGame, components);
 
 			res.status(201);
 			res.type("application/json");
@@ -95,6 +140,7 @@ public class GamesService {
 		get("/games/:gameid/players/:playerid", (req, res) -> {
 			Game game = findGame(req.params(":gameid"));			 
 			Player player = game.getPlayerByID(req.params(":playerid"));
+			player.readyUp(player.getUri() + "/ready");
 			return gson.toJson(player);
 		});
 		
@@ -114,11 +160,12 @@ public class GamesService {
 			}
 
 			Player player = new Player(playerID, req.queryParams("name"), req.queryParams("uri"));
+			player.setUri(serviceUri + "/games/" + gameID + "/players/" + player.getID());
 			game.addPlayer(player);
 			
-			ServiceApi.addPlayerToBoard(gameID, playerID);
+			ServiceApi.addPlayerToBoard(game, playerID);
 
-			return gson.toJson(player);
+			return player.getUri();
 		});
 		
 		/**
@@ -134,7 +181,7 @@ public class GamesService {
 			Player player = new Player(playerID, req.queryParams("name"), req.queryParams("uri"));
 			game.removePlayer(player);
 			
-			ServiceApi.removePlayerFromBoard(gameID, playerID);
+			ServiceApi.removePlayerFromBoard(game, playerID);
 
 			return gson.toJson(player);			
 		});
@@ -148,7 +195,8 @@ public class GamesService {
 			Player player = game.getPlayerByID(req.params(":playerid"));
 			
 			game.releaseMutex();
-			return player.readyUp();
+			player.readyUp();
+			return true;
 		});
 		
 		/**
@@ -216,6 +264,35 @@ public class GamesService {
 			game.releaseMutex();
 			return gson.toJson(game);
 		});
+		
+		// register();
+	}
+	
+	public static void register() {
+		Gson gson = new Gson();
+		try {
+			String json = gson.toJson(service);
+			System.out.println(json);
+			HttpResponse<JsonNode> response = Unirest
+					.post(yellowPageUri)
+					.header("accept", "application/json")
+					.header("content-type", "application/json")
+					.body(json).asJson();
+
+			System.out.println(yellowPageUri);
+			System.out.println("Status: " + response.getStatus() + " Body:" + response.getBody().toString());
+		} catch (UnirestException e) {
+			e.printStackTrace();
+		}
 	}
 
+
+	private static Game findGame(String id) {
+		for (Game game : gameList) {
+			if (game.getID().equals(id))
+				return game;
+		}
+
+		return null;
+	}
 }

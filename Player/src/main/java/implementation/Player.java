@@ -24,11 +24,6 @@ public class Player {
 	private String uri;
 	
 	/**
-	 * 
-	 */
-	//private Place place;
-	
-	/**
 	 * Indicates the playerpostion on a board
 	 */
 	private int position;
@@ -36,17 +31,20 @@ public class Player {
 	/**
 	 * Indicates if the player object is ready for playing
 	 */
-	private Boolean ready;
+	private String ready;
+
+	private boolean readyBol;
 	
-	/**
-	 * Public constructor
-	 * Assigns a unique identifier for a object
-	 * Initializes the attributes
-	 * @param Unique identifier for a object
-	 */
-	public Player(String playerID) {
+	
+
+	public Player(String playerID, String name, String uri) {
 		this.playerID = playerID;
-		this.ready = false;
+		this.name = name;
+		this.uri = uri;
+	}
+	
+	public String getID() {
+		return this.playerID;		
 	}
 
 	public String getName() {
@@ -65,14 +63,6 @@ public class Player {
 		this.uri = uri;
 	}
 
-//	public Place getPlace() {
-//		return place;
-//	}
-//
-//	public void setPlace(Place place) {
-//		this.place = place;
-//	}
-
 	public int getPosition() {
 		return position;
 	}
@@ -81,15 +71,20 @@ public class Player {
 		this.position = position;
 	}
 
-	public String getID() {
-		return playerID;
-	}
-
-	public Boolean getReady() {
+	public String getReady() {
 		return ready;
 	}
+	
+	public String readyUp(String str) {
+		return this.ready = str;
+	}
 
-	public void setReady(Boolean ready) {
-		this.ready = ready;
+	public void readyUp() {
+		this.readyBol = true;
+	}
+
+	public void setTurn(boolean b) {
+		// TODO Auto-generated method stub
+		
 	}
 }

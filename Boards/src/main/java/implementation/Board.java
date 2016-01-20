@@ -54,7 +54,7 @@ public class Board {
 		fields.add(new Field(new Place("Parkstraße")));
 		fields.add(new Field(new Place("Zusatzsteuer")));
 		fields.add(new Field(new Place("Schlossallee")));
-		registerFields();
+//		registerFields();
 	}
 
 	public List<Field> getFields() {

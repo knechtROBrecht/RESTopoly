@@ -3,28 +3,34 @@ package implementation;
 import java.util.ArrayList;
 import java.util.List;
 
-import implementation.GameComponent;
+import implementation.Components;
 
-/**
- * Implementation of the Game-Scheme
- * 
- * @author Flah
- * @see <a href=
- *      "https://pub.informatik.haw-hamburg.de/home/pub/prof/kossakowski_klaus-peter/wise2015/verteiltesysteme/step2.raml">
- *      API</a>
- */
 public class Game {
 
 	private static int gamesCounter = 0;
 
 	private String gameID;
 	
-	private String uri;
+	public String uri;
 
 	private List<Player> players;
 	
-	GameComponent components;
+	Components components;
 	
+	
+	
+	public String toString(){
+		return gameID + "//" + uri; 
+	}
+	
+	public Components getComponents() {
+		return components;
+	}
+
+	public void setComponents(Components components) {
+		this.components = components;
+	}
+
 	private boolean started = false;
 	
 	private Player mutex = null;
@@ -115,4 +121,5 @@ public class Game {
 	public boolean doesPlayerExists(String playerID) {
 		return getPlayerByID(playerID) != null; 
 	}
+
 }

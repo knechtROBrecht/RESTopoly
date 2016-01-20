@@ -7,6 +7,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+
 import com.google.gson.Gson;
 import com.mashape.unirest.http.HttpResponse;
 import com.mashape.unirest.http.JsonNode;
@@ -18,12 +19,16 @@ import implementation.Broker;
 import implementation.Estate;
 import implementation.Event;
 import implementation.Player;
+import implementation.ServiceDescription;
 
 public class BrokerService {
 
 	static Map<String, Broker> brokers = new HashMap<>();
-	// Games 0, Boards 1, Dice 2, Bank 3, Events 4, Brokers 5
+	
 	static String serviceUri = "https://vs-docker.informatik.haw-hamburg.de/ports/17474/brokers";
+	private static String yellowPageUri = "http://vs-docker.informatik.haw-hamburg.de:8053/services";
+	private static ServiceDescription service = new ServiceDescription("BrokerRFYD", "Broker Service", "broker", serviceUri);
+
 
 	public static void main(String[] args) {
 		
@@ -199,7 +204,23 @@ public class BrokerService {
 
 			return "";
 		});
-
+		
+	// 	register();
+	}
+	
+	public static void register() {
+		Gson gson = new Gson();
+		try {
+			HttpResponse<JsonNode> response = Unirest
+					.post(yellowPageUri)
+					.header("accept", "application/json")
+					.header("content-type", "application/json")
+					.body(gson.toJson(service)).asJson();
+			System.out.println("Status: " + response.getStatus() + " Body:"
+					+ response.getBody().toString());
+		} catch (UnirestException e) {
+			e.printStackTrace();
+		}
 	}
 
 	private static boolean transferMoneyToBank(Broker broker, String playerid, int amount, String body) {

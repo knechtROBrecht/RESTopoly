@@ -31,13 +31,17 @@ public class Player {
 	/**
 	 * Indicates if the player object is ready for playing
 	 */
-	private Boolean ready = false;
+	private String ready;
 
+	private boolean readyBol;
 	
+	
+
 	public Player(String playerID, String name, String uri) {
 		this.playerID = playerID;
 		this.name = name;
 		this.uri = uri;
+		this.readyBol = false;
 	}
 	
 	public String getID() {
@@ -68,15 +72,15 @@ public class Player {
 		this.position = position;
 	}
 
-	public Boolean getReady() {
+	public String getReady() {
 		return ready;
 	}
 	
-	public boolean readyUp() {
-		return this.ready = true;
+	public String readyUp(String str) {
+		return this.ready = str;
 	}
 
-	public void setReady(Boolean ready) {
-		this.ready = ready;
+	public void readyUp() {
+		this.readyBol = true;
 	}
 }

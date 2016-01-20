@@ -3,15 +3,15 @@ package implementation;
 public class Game {
 
 	private String uri;
-    private String gameid;
+    private String gameID;
     private Components components;
     
     public String getGameid() {
-        return gameid;
+        return gameID;
     }
 
     public void setGameid(String gameid) {
-        this.gameid = gameid;
+        this.gameID = gameid;
     }
 
     public Components getComponents() {

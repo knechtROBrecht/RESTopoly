@@ -2,8 +2,8 @@ package eventsService;
 
 import static spark.Spark.*;
 import static spark.SparkBase.port;
-
 import implementation.Event;
+import implementation.ServiceDescription;
 import implementation.Subscription;
 
 import java.util.ArrayList;
@@ -13,10 +13,17 @@ import java.util.Map;
 import java.util.UUID;
 
 import com.google.gson.Gson;
+import com.mashape.unirest.http.HttpResponse;
+import com.mashape.unirest.http.JsonNode;
+import com.mashape.unirest.http.Unirest;
+import com.mashape.unirest.http.exceptions.UnirestException;
 
 public class EventsService {
 	
-	private static String serviceUri = "";
+	private static String serviceUri = "https://vs-docker.informatik.haw-hamburg.de/ports/17473/event";
+	private static String yellowPageUri = "http://vs-docker.informatik.haw-hamburg.de:8053/services";
+	private static ServiceDescription service = new ServiceDescription("EventsRFYD", "Events Service", "events", serviceUri);
+
 	
 	private static Map<String, List<Event>> events = new HashMap<String, List<Event>>();
 	private static List<Subscription> subscriptions = new ArrayList<>();
@@ -142,7 +149,28 @@ public class EventsService {
 			res.status(404);
 			return null;
 		});
+		
+		// register();
 	}
+	
+	public static void register() {
+		Gson gson = new Gson();
+		try {
+			String json = gson.toJson(service);
+			System.out.println(json);
+			HttpResponse<JsonNode> response = Unirest
+					.post(yellowPageUri)
+					.header("accept", "application/json")
+					.header("content-type", "application/json")
+					.body(json).asJson();
+
+			System.out.println(yellowPageUri);
+			System.out.println("Status: " + response.getStatus() + " Body:" + response.getBody().toString());
+		} catch (UnirestException e) {
+			e.printStackTrace();
+		}
+	}
+	
 
 	private static void addEvent(String gameID, Event event) {
 		List<Event> eventList = events.get(gameID);
